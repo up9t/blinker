@@ -14,7 +14,8 @@ const props = defineProps<{
   selectedDeviceId: string;
 }>();
 
-const isBreakRef = ref(false);
+const isBreakRef = defineModel<boolean>("break");
+
 const isRunningRef = ref(false);
 const blinkCountRef = ref(0);
 const isEyesCloseRef = ref(false);
@@ -66,6 +67,7 @@ function handleEyesClose() {
   }
 
   if (!isRunningRef.value || isBreakRef.value) return;
+  console.log("Close");
 
   hideOverlay();
   removeTimeout();

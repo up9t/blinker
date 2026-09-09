@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, reactive, computed } from "vue";
+import { onMounted, onUnmounted, watch, computed } from "vue";
 import audioSrc from "../assets/sounds/solemn-522.ogg";
 import { startBreak as callBreak, stopBreak as callStopBreak } from "../common/api.js";
 import type { Breakpoint } from "../common/types.js";
@@ -13,7 +13,8 @@ import BreakpointItem from "./BreakpointItem.vue";
 
 const breakIntervals = new Map<string, number>();
 const notificationIntervals = new Map<string, number>();
-const state = reactive({ isBreak: false });
+
+const isBreakRef = defineModel<boolean>("break");
 
 const allEnabled = computed({
   get: () => settings.breakpoints.length > 0 && settings.breakpoints.every((bp) => bp.enabled),
@@ -50,7 +51,7 @@ function removeBreakpoint(index: number) {
 }
 
 function startBreak(ms: number) {
-  state.isBreak = true;
+  isBreakRef.value = true;
   callBreak(ms);
 }
 
@@ -73,7 +74,7 @@ function startBreakpoint(bp: Breakpoint) {
 
   // 2. Define the recursive "loop"
   const runCycle = () => {
-    state.isBreak = false;
+    isBreakRef.value = false;
 
     // only notify if interval is greater than notificationBeforeSecond
     if (intervalMs > notifyBeforeSecond * 1000) {
@@ -113,12 +114,12 @@ function stopBreakpoint(id: string) {
   const notificationTimeoutId = notificationIntervals.get(id);
 
   if (timeoutId) {
-    window.clearTimeout(timeoutId); // Works for both work and pause timeouts
+    clearTimeout(timeoutId); // Works for both work and pause timeouts
     breakIntervals.delete(id);
   }
 
   if (notificationTimeoutId) {
-    window.clearTimeout(notificationTimeoutId);
+    clearTimeout(notificationTimeoutId);
     notificationIntervals.delete(id);
   }
 }

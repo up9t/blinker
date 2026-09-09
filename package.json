@@ -1,10 +1,11 @@
 {
   "name": "blinker",
   "private": true,
-  "version": "1.9.3",
+  "version": "1.9.4",
   "type": "module",
   "scripts": {
     "build": "vue-tsc --noEmit && vite build",
+    "type-check": "vue-tsc --noEmit",
     "dev": "vite",
     "format": "oxfmt src",
     "lint": "oxlint --vue-plugin src",
