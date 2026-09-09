@@ -12,9 +12,8 @@ import CameraStatusBadge from "./CameraStatusBadge.vue";
 
 const props = defineProps<{
   selectedDeviceId: string;
+  isBreak: boolean;
 }>();
-
-const isBreakRef = defineModel<boolean>("break");
 
 const isRunningRef = ref(false);
 const blinkCountRef = ref(0);
@@ -66,7 +65,7 @@ function handleEyesClose() {
     incrementBlinkCounter();
   }
 
-  if (!isRunningRef.value || isBreakRef.value) return;
+  if (!isRunningRef.value || props.isBreak) return;
   console.log("Close");
 
   hideOverlay();
@@ -77,7 +76,7 @@ function handleEyesOpen() {
   if (isEyesCloseRef.value) {
     isEyesCloseRef.value = false;
 
-    if (!isRunningRef.value || isBreakRef.value) return;
+    if (!isRunningRef.value || props.isBreak) return;
 
     resetTimeout(showOverlay);
   }
