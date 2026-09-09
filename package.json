@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vue-tsc --noEmit && vite build",
+    "type-check": "vue-tsc --noEmit",
     "dev": "vite",
     "format": "oxfmt src",
     "lint": "oxlint --vue-plugin src",
