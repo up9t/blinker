@@ -145,6 +145,7 @@ watch(
   },
   { deep: true, immediate: true },
 );
+
 onMounted(async () => {
   const isGranted = await permissionGranted();
 

@@ -1,4 +1,4 @@
-import { emitTo } from "@tauri-apps/api/event";
+import { emitTo, EventCallback } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow, WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { LazyStore } from "@tauri-apps/plugin-store";
 
@@ -52,9 +52,9 @@ export function stopBreak() {
 }
 
 export async function onBreakStop(callback: (...args: any[]) => any): Promise<() => void> {
-  const appWebview = getCurrentWebviewWindow();
+  const window = getCurrentWebviewWindow();
 
-  return appWebview.listen<void>(STOP_BREAK_EVENT, (event) => {
+  return window.listen<void>(STOP_BREAK_EVENT, (event) => {
     callback(event.payload);
   });
 }
@@ -65,9 +65,15 @@ export function startBreak(ms: number) {
 }
 
 export async function onBreakStart(callback: (...args: any[]) => any): Promise<() => void> {
-  const appWebview = getCurrentWebviewWindow();
+  const window = getCurrentWebviewWindow();
 
-  return appWebview.listen<number>(START_BREAK_EVENT, (event) => {
+  return window.listen<number>(START_BREAK_EVENT, (event) => {
     callback(event.payload);
   });
+}
+
+export function onFocusChange(callback: EventCallback<boolean>) {
+  const window = getCurrentWebviewWindow();
+
+  return window.onFocusChanged(callback);
 }
