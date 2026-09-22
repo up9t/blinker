@@ -2,7 +2,7 @@
 import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 import { onMounted, onUnmounted, ref, computed, useTemplateRef, watch } from "vue";
 import { Play, Pause } from "@lucide/vue";
-import { hideOverlay, showOverlay } from "../common/api.js";
+import { hideOverlay, onFocusChange, showOverlay } from "../common/api.js";
 import { clearCanvas, resizeCanvas } from "../common/utils.js";
 import { drawLandmark, setupLandmarker } from "../landmark.js";
 import { defaultSettings as settings } from "../settings.js";
@@ -12,13 +12,17 @@ import CameraStatusBadge from "./CameraStatusBadge.vue";
 
 const props = defineProps<{
   selectedDeviceId: string;
+  isBreak: boolean;
 }>();
 
-const isBreakRef = defineModel<boolean>("break");
+// need a use case for this variable,
+// maybe require the user to move out of screen when break time?
+const isFaceFoundRef = ref(true);
 
+const isFocusRef = ref(true);
 const isRunningRef = ref(false);
-const blinkCountRef = ref(0);
 const isEyesCloseRef = ref(false);
+const blinkCountRef = ref(0);
 const timeoutIdRef = ref<number | undefined>(undefined);
 const videoElementRef = useTemplateRef("videoElement");
 const canvasElementRef = useTemplateRef("canvasElement");
@@ -66,8 +70,7 @@ function handleEyesClose() {
     incrementBlinkCounter();
   }
 
-  if (!isRunningRef.value || isBreakRef.value) return;
-  console.log("Close");
+  if (!isRunningRef.value || props.isBreak) return;
 
   hideOverlay();
   removeTimeout();
@@ -77,7 +80,7 @@ function handleEyesOpen() {
   if (isEyesCloseRef.value) {
     isEyesCloseRef.value = false;
 
-    if (!isRunningRef.value || isBreakRef.value) return;
+    if (!isRunningRef.value || props.isBreak) return;
 
     resetTimeout(showOverlay);
   }
@@ -126,6 +129,8 @@ function predictWebcam() {
     const results = faceLandmarker.detectForVideo(videoElementRef.value, performance.now());
 
     if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
+      isFaceFoundRef.value = true;
+
       const blinkEyes = results.faceBlendshapes
         .at(0)
         ?.categories.filter(
@@ -142,9 +147,11 @@ function predictWebcam() {
         handleEyesOpen();
       }
 
-      if (results) {
+      if (results && isFocusRef.value) {
         drawLandmark(results, ctx);
       }
+    } else {
+      isFaceFoundRef.value = false;
     }
   })();
 
@@ -192,9 +199,11 @@ function stopCamera() {
 }
 
 function onVideoLoaded() {
-  console.log("video loaded, set ready to true");
+  console.info("Video loaded, set ready to true");
   setVideoReady(true);
 }
+
+let unlistenOnFocus = () => {};
 
 onMounted(async () => {
   const video = videoElementRef.value;
@@ -208,6 +217,10 @@ onMounted(async () => {
   faceLandmarker = await setupLandmarker(offscreenCanvas);
 
   video.addEventListener("loadeddata", onVideoLoaded);
+
+  unlistenOnFocus = await onFocusChange(({ payload: focused }) => {
+    isFocusRef.value = focused;
+  });
 });
 
 onUnmounted(async () => {
@@ -219,6 +232,7 @@ onUnmounted(async () => {
 
   const video = videoElementRef.value;
   video?.removeEventListener("loadeddata", onVideoLoaded);
+  unlistenOnFocus();
 });
 </script>
 
