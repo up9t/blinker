@@ -23,7 +23,7 @@ const isFocusRef = ref(true);
 const isRunningRef = ref(false);
 const isEyesCloseRef = ref(false);
 const blinkCountRef = ref(0);
-const timeoutIdRef = ref<number | undefined>(undefined);
+const blinkTimeoutIdRef = ref<number | undefined>(undefined);
 const videoElementRef = useTemplateRef("videoElement");
 const canvasElementRef = useTemplateRef("canvasElement");
 const canvasContextCompt = computed(() => canvasElementRef.value?.getContext("2d"));
@@ -87,12 +87,12 @@ function handleEyesOpen() {
 }
 
 function removeTimeout() {
-  clearTimeout(timeoutIdRef.value);
+  clearTimeout(blinkTimeoutIdRef.value);
 }
 
 function resetTimeout(callback: () => void) {
-  clearTimeout(timeoutIdRef.value);
-  timeoutIdRef.value = setTimeout(callback, settings.blinkTimeout * 1000);
+  clearTimeout(blinkTimeoutIdRef.value);
+  blinkTimeoutIdRef.value = setTimeout(callback, settings.blinkTimeout * 1000);
 }
 
 function incrementBlinkCounter() {
@@ -122,7 +122,13 @@ function predictWebcam() {
     )
       return;
 
-    resizeCanvas(canvas, videoElementRef.value.videoWidth, videoElementRef.value.videoHeight);
+    const newWidth = videoElementRef.value.videoWidth;
+    const newHeight = videoElementRef.value.videoHeight;
+
+    if (canvas.width !== newWidth || canvas.height !== newHeight) {
+      resizeCanvas(canvas, newWidth, newHeight);
+    }
+
     clearCanvas(ctx);
 
     lastVideoTime = videoElementRef.value.currentTime;
@@ -159,6 +165,10 @@ function predictWebcam() {
 }
 
 async function startCamera(deviceId: string) {
+  if (typeof requestAnimationFrameId !== "undefined") {
+    cancelAnimationFrame(requestAnimationFrameId);
+  }
+
   const stream = (await navigator.mediaDevices
     .getUserMedia({
       video: {
@@ -224,6 +234,8 @@ onMounted(async () => {
 });
 
 onUnmounted(async () => {
+  stopCamera();
+  removeTimeout();
   faceLandmarker?.close();
 
   if (typeof requestAnimationFrameId !== "undefined") {
