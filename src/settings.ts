@@ -1,5 +1,5 @@
 import { reactive, watch } from "vue";
-import { DEFAULT_SETTINGS, saveSettings, type Settings } from "./common/settings-manager.js";
+import { DEFAULT_SETTINGS, saveSettings, type Settings } from "@/common/settings-manager.js";
 
 // Initialize with defaults; will be hydrated on app startup
 export const defaultSettings = reactive<Settings>(structuredClone(DEFAULT_SETTINGS));
