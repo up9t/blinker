@@ -99,7 +99,7 @@ function incrementBlinkCounter() {
   blinkCountRef.value++;
 }
 
-function predictWebcam() {
+function predictWebcam(now: number) {
   const canvas = canvasElementRef.value;
   const ctx = canvasContextCompt.value;
 
@@ -132,7 +132,7 @@ function predictWebcam() {
     clearCanvas(ctx);
 
     lastVideoTime = videoElementRef.value.currentTime;
-    const results = faceLandmarker.detectForVideo(videoElementRef.value, performance.now());
+    const results = faceLandmarker.detectForVideo(videoElementRef.value, now);
 
     if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
       isFaceFoundRef.value = true;
@@ -217,14 +217,13 @@ let unlistenOnFocus = () => {};
 
 onMounted(async () => {
   const video = videoElementRef.value;
-  const canvas = canvasElementRef.value;
 
-  if (!video || !canvas) {
+  if (!video) {
     throw new Error("canvas or video element was not found");
   }
 
-  const offscreenCanvas = document.createElement("canvas");
-  faceLandmarker = await setupLandmarker(offscreenCanvas);
+  const canvas = document.createElement("canvas");
+  faceLandmarker = await setupLandmarker(canvas);
 
   video.addEventListener("loadeddata", onVideoLoaded);
 
