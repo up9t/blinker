@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import Breakpoint from "./components/Breakpoint.vue";
-import Camera from "./components/Camera.vue";
-import DeviceSelector from "./components/DeviceSelector.vue";
-import Settings from "./components/Settings.vue";
+import Breakpoint from "@/components/Breakpoint.vue";
+import Camera from "@/components/Camera.vue";
+import DeviceSelector from "@/components/DeviceSelector.vue";
+import Settings from "@/components/Settings.vue";
 
 const selectedDeviceIdRef = ref("");
 const isBreakRef = ref(false);

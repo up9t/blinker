@@ -1,6 +1,6 @@
 import { LazyStore } from "@tauri-apps/plugin-store";
-import type { Breakpoint, Theme } from "./types.js";
-import { getRandomId } from "./utils.js";
+import type { Breakpoint, Theme } from "@/common/types";
+import { getRandomId } from "@/common/utils";
 
 export interface Settings {
   thresholdEyesClosed: number;

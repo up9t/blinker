@@ -1,16 +1,16 @@
-import "./main.css";
+import "@/main.css";
 import { createApp } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
-import App from "./App.vue";
-import MainView from "./MainView.vue";
-import OverlayView from "./OverlayView.vue";
-import { loadSettings } from "./settings.js";
-import { hydrateSettings } from "./settings.js";
-import { applyTheme } from "./lib/theme.js";
+import App from "@/App.vue";
+import Main from "@/pages/Main.vue";
+import Overlay from "@/pages/Overlay.vue";
+import { loadSettings } from "@/settings";
+import { hydrateSettings } from "@/settings";
+import { applyTheme } from "@/lib/theme";
 
 const routes = [
-  { path: "/", component: MainView },
-  { path: "/overlay", component: OverlayView },
+  { path: "/", component: Main },
+  { path: "/overlay", component: Overlay },
 ];
 
 export const router = createRouter({

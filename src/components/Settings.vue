@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { defaultSettings as settings } from "../settings.js";
-import { resetToDefaults } from "../common/settings-manager.js";
-import { showNotification } from "../lib/notification.js";
-import { applyTheme, setStoredTheme } from "../lib/theme.js";
+import { defaultSettings as settings } from "../settings";
+import { resetToDefaults } from "../common/settings-manager";
+import { showNotification } from "../lib/notification";
+import { applyTheme, setStoredTheme } from "../lib/theme";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { hydrateSettings } from "../settings.js";
+import { hydrateSettings } from "../settings";
 
 const showResetDialog = ref(false);
 
