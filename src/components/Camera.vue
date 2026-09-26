@@ -2,10 +2,10 @@
 import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 import { onMounted, onUnmounted, ref, computed, useTemplateRef, watch } from "vue";
 import { Play, Pause } from "@lucide/vue";
-import { hideOverlay, onFocusChange, showOverlay } from "../common/api.js";
-import { clearCanvas, resizeCanvas } from "../common/utils.js";
-import { drawLandmark, setupLandmarker } from "../landmark.js";
-import { defaultSettings as settings } from "../settings.js";
+import { hideOverlay, onFocusChange, showOverlay } from "../common/api";
+import { clearCanvas, resizeCanvas } from "../common/utils";
+import { drawLandmark, setupLandmarker } from "../lib/mediapipe";
+import { defaultSettings as settings } from "../settings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import CameraStatusBadge from "./CameraStatusBadge.vue";

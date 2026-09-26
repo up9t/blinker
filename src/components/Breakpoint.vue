@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, watch, computed } from "vue";
 import audioSrc from "../assets/sounds/solemn-522.ogg";
-import { startBreak as callBreak, stopBreak as callStopBreak } from "../common/api.js";
-import type { Breakpoint } from "../common/types.js";
-import { getRandomId, toMs } from "../common/utils.js";
-import { defaultSettings as settings } from "../settings.js";
-import { permissionGranted, showNotification } from "@/lib/notification.js";
+import { startBreak as callBreak, stopBreak as callStopBreak } from "../common/api";
+import type { Breakpoint } from "../common/types";
+import { getRandomId, toMs } from "../common/utils";
+import { defaultSettings as settings } from "../settings";
+import { permissionGranted, showNotification } from "@/lib/notification";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
