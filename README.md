@@ -3,7 +3,7 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/up9t99)
 
 <p align="center">
-  <img width="128" height="128" alt="icon" src="./icon.svg" />
+  <img width="128" height="128" alt="icon" src="./public/icon.svg" />
 </p>
 
 <p align="center">
@@ -40,6 +40,23 @@ Downloads are available in AppImage, RPM/DEB, Flatpak and even Tarball.
 
 ### Install dependencies
 
+- Install System dependencies
+
+Fedora
+
+```bash
+sudo dnf check-update
+sudo dnf install webkit2gtk4.1-devel \
+  openssl-devel \
+  curl \
+  wget \
+  file \
+  libappindicator-gtk3-devel \
+  librsvg2-devel \
+  libxdo-devel
+sudo dnf group install "c-development"
+```
+
 - Install Rust & Cargo
 
 - Install Node & Npm
@@ -68,14 +85,18 @@ npm run tauri build
 Build binary only
 
 ```bash
-npm run tauri build -- --no-bundle
+# release
+npm run tauri -- build --no-bundle
+
+# debug
+npm run tauri -- build --no-bundle --debug
 ```
 
 Build flatpak and run flatpak (manually)
 
 ```bash
 npm ci 
-npm run tauri build -- --no-bundle
+npm run tauri -- build --no-bundle
 flatpak-builder --repo=repo --force-clean build-dir/ org.blinker.Blinker.yaml
 flatpak --user install ./repo org.blinker.Blinker -y
 flatpak run org.blinker.Blinker

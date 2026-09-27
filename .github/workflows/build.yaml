@@ -98,7 +98,6 @@ jobs:
 
       - name: Extract
         env:
-          # the dir where the flatpak will look into the executable
           LOOK_DIR: ./src-tauri/target/release
         run: |
           mkdir -p ${{ env.LOOK_DIR }}
