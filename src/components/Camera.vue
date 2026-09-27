@@ -19,11 +19,8 @@ const props = defineProps<{
 // maybe require the user to move out of screen when break time?
 const isFaceFoundRef = ref(true);
 
-const isFocusRef = ref(true);
 const isRunningRef = ref(false);
-const isEyesCloseRef = ref(false);
 const blinkCountRef = ref(0);
-const blinkTimeoutIdRef = ref<number | undefined>(undefined);
 const videoElementRef = useTemplateRef("videoElement");
 const canvasElementRef = useTemplateRef("canvasElement");
 const canvasContextCompt = computed(() => canvasElementRef.value?.getContext("2d"));
@@ -32,6 +29,9 @@ let lastVideoTime = -1;
 let requestAnimationFrameId: number | undefined;
 let faceLandmarker: FaceLandmarker | undefined;
 let videoReady = false;
+let isEyesClose = false;
+let isFocus = true;
+let blinkTimeoutId: number | undefined;
 
 watch(
   () => props.selectedDeviceId,
@@ -65,8 +65,8 @@ function setVideoReady(value: boolean = true) {
 }
 
 function handleEyesClose() {
-  if (!isEyesCloseRef.value) {
-    isEyesCloseRef.value = true;
+  if (!isEyesClose) {
+    isEyesClose = true;
     incrementBlinkCounter();
   }
 
@@ -77,8 +77,8 @@ function handleEyesClose() {
 }
 
 function handleEyesOpen() {
-  if (isEyesCloseRef.value) {
-    isEyesCloseRef.value = false;
+  if (isEyesClose) {
+    isEyesClose = false;
 
     if (!isRunningRef.value || props.isBreak) return;
 
@@ -87,12 +87,12 @@ function handleEyesOpen() {
 }
 
 function removeTimeout() {
-  clearTimeout(blinkTimeoutIdRef.value);
+  clearTimeout(blinkTimeoutId);
 }
 
 function resetTimeout(callback: () => void) {
-  clearTimeout(blinkTimeoutIdRef.value);
-  blinkTimeoutIdRef.value = setTimeout(callback, settings.blinkTimeout * 1000);
+  clearTimeout(blinkTimeoutId);
+  blinkTimeoutId = setTimeout(callback, settings.blinkTimeout * 1000);
 }
 
 function incrementBlinkCounter() {
@@ -153,7 +153,7 @@ function predictWebcam(now: number) {
         handleEyesOpen();
       }
 
-      if (results && isFocusRef.value) {
+      if (results && isFocus) {
         drawLandmark(results, ctx);
       }
     } else {
@@ -228,7 +228,7 @@ onMounted(async () => {
   video.addEventListener("loadeddata", onVideoLoaded);
 
   unlistenOnFocus = await onFocusChange(({ payload: focused }) => {
-    isFocusRef.value = focused;
+    isFocus = focused;
   });
 });
 
