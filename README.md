@@ -86,7 +86,7 @@ flatpak run org.blinker.Blinker
 - To automatically build the icons from a specific file:
 
     ```bash
-    npm run tauri icon icon.svg
+    npm run tauri icon public/icon.svg
     ```
 
 ## FAQ

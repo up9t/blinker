@@ -24,6 +24,6 @@ modules:
       - type: file
         path: src-tauri/target/release/blinker
       - type: file
-        path: ./icon.svg
+        path: ./public/icon.svg
       - type: file
         path: ./app.desktop
