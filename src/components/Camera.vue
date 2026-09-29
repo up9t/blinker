@@ -263,7 +263,7 @@ onUnmounted(async () => {
     <CardContent>
       <video
         ref="videoElement"
-        class="absolute inset-0 w-full h-full object-cover invisible"
+        class="absolute inset-0 w-full h-full object-cover opacity-0"
         autoplay
         muted
         playsinline
