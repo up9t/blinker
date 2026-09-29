@@ -28,4 +28,3 @@ repo/
 .flatpak-builder/
 *.tar.xz
 sbom.json
-.kilo/

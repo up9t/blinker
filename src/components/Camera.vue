@@ -19,11 +19,8 @@ const props = defineProps<{
 // maybe require the user to move out of screen when break time?
 const isFaceFoundRef = ref(true);
 
-const isFocusRef = ref(true);
 const isRunningRef = ref(false);
-const isEyesCloseRef = ref(false);
 const blinkCountRef = ref(0);
-const timeoutIdRef = ref<number | undefined>(undefined);
 const videoElementRef = useTemplateRef("videoElement");
 const canvasElementRef = useTemplateRef("canvasElement");
 const canvasContextCompt = computed(() => canvasElementRef.value?.getContext("2d"));
@@ -32,6 +29,9 @@ let lastVideoTime = -1;
 let requestAnimationFrameId: number | undefined;
 let faceLandmarker: FaceLandmarker | undefined;
 let videoReady = false;
+let isEyesClose = false;
+let isFocus = true;
+let blinkTimeoutId: number | undefined;
 
 watch(
   () => props.selectedDeviceId,
@@ -65,8 +65,8 @@ function setVideoReady(value: boolean = true) {
 }
 
 function handleEyesClose() {
-  if (!isEyesCloseRef.value) {
-    isEyesCloseRef.value = true;
+  if (!isEyesClose) {
+    isEyesClose = true;
     incrementBlinkCounter();
   }
 
@@ -77,8 +77,8 @@ function handleEyesClose() {
 }
 
 function handleEyesOpen() {
-  if (isEyesCloseRef.value) {
-    isEyesCloseRef.value = false;
+  if (isEyesClose) {
+    isEyesClose = false;
 
     if (!isRunningRef.value || props.isBreak) return;
 
@@ -87,19 +87,19 @@ function handleEyesOpen() {
 }
 
 function removeTimeout() {
-  clearTimeout(timeoutIdRef.value);
+  clearTimeout(blinkTimeoutId);
 }
 
 function resetTimeout(callback: () => void) {
-  clearTimeout(timeoutIdRef.value);
-  timeoutIdRef.value = setTimeout(callback, settings.blinkTimeout * 1000);
+  clearTimeout(blinkTimeoutId);
+  blinkTimeoutId = setTimeout(callback, settings.blinkTimeout * 1000);
 }
 
 function incrementBlinkCounter() {
   blinkCountRef.value++;
 }
 
-function predictWebcam() {
+function predictWebcam(now: number) {
   const canvas = canvasElementRef.value;
   const ctx = canvasContextCompt.value;
 
@@ -122,11 +122,17 @@ function predictWebcam() {
     )
       return;
 
-    resizeCanvas(canvas, videoElementRef.value.videoWidth, videoElementRef.value.videoHeight);
+    const newWidth = videoElementRef.value.videoWidth;
+    const newHeight = videoElementRef.value.videoHeight;
+
+    if (canvas.width !== newWidth || canvas.height !== newHeight) {
+      resizeCanvas(canvas, newWidth, newHeight);
+    }
+
     clearCanvas(ctx);
 
     lastVideoTime = videoElementRef.value.currentTime;
-    const results = faceLandmarker.detectForVideo(videoElementRef.value, performance.now());
+    const results = faceLandmarker.detectForVideo(videoElementRef.value, now);
 
     if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
       isFaceFoundRef.value = true;
@@ -147,7 +153,7 @@ function predictWebcam() {
         handleEyesOpen();
       }
 
-      if (results && isFocusRef.value) {
+      if (results && isFocus) {
         drawLandmark(results, ctx);
       }
     } else {
@@ -159,6 +165,10 @@ function predictWebcam() {
 }
 
 async function startCamera(deviceId: string) {
+  if (typeof requestAnimationFrameId !== "undefined") {
+    cancelAnimationFrame(requestAnimationFrameId);
+  }
+
   const stream = (await navigator.mediaDevices
     .getUserMedia({
       video: {
@@ -207,23 +217,24 @@ let unlistenOnFocus = () => {};
 
 onMounted(async () => {
   const video = videoElementRef.value;
-  const canvas = canvasElementRef.value;
 
-  if (!video || !canvas) {
+  if (!video) {
     throw new Error("canvas or video element was not found");
   }
 
-  const offscreenCanvas = document.createElement("canvas");
-  faceLandmarker = await setupLandmarker(offscreenCanvas);
+  const canvas = document.createElement("canvas");
+  faceLandmarker = await setupLandmarker(canvas);
 
   video.addEventListener("loadeddata", onVideoLoaded);
 
   unlistenOnFocus = await onFocusChange(({ payload: focused }) => {
-    isFocusRef.value = focused;
+    isFocus = focused;
   });
 });
 
 onUnmounted(async () => {
+  stopCamera();
+  removeTimeout();
   faceLandmarker?.close();
 
   if (typeof requestAnimationFrameId !== "undefined") {

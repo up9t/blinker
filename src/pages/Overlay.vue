@@ -13,13 +13,15 @@ const message = computed(() =>
   isBreak.value ? messages[getRandomIntInclusive(0, messages.length - 1)] : "Not a break",
 );
 
+let timer: number;
+let cancelBreakStart: () => void = () => {};
+let cancelBreakStop: () => void = () => {};
+
 function getRandomIntInclusive(min: number, max: number) {
   const minCeiled = Math.ceil(min);
   const maxFloored = Math.floor(max);
   return Math.floor(Math.random() * (maxFloored - minCeiled + 1)) + minCeiled;
 }
-
-let timer: number;
 
 function startCountdown(durationMs: number) {
   const start = performance.now();
@@ -48,9 +50,6 @@ function updateTime() {
   });
 }
 
-let cancelBreakStart: null | (() => void) = null;
-let cancelBreakStop: null | (() => void) = null;
-
 onMounted(async () => {
   updateTime();
   timer = window.setInterval(() => {
@@ -74,13 +73,8 @@ onMounted(async () => {
 onUnmounted(() => {
   clearInterval(timer);
 
-  if (cancelBreakStop) {
-    cancelBreakStop();
-  }
-
-  if (cancelBreakStart) {
-    cancelBreakStart();
-  }
+  cancelBreakStop();
+  cancelBreakStart();
 });
 </script>
 
