@@ -95,9 +95,19 @@ npm run tauri -- build --no-bundle --debug
 Build flatpak and run flatpak (manually)
 
 ```bash
+# install
 npm ci 
+
+# build
 npm run tauri -- build --no-bundle
+
+# flatpak build
 flatpak-builder --repo=repo --force-clean build-dir/ org.blinker.Blinker.yaml
+# if you don't want to use read only fuse file (e.g in container).
+# flatpak-builder --repo=repo --force-clean --disable-rofiles-fuse build-dir/ org.blinker.Blinker.yaml
+
+
+# install
 flatpak --user install ./repo org.blinker.Blinker -y
 flatpak run org.blinker.Blinker
 ```
