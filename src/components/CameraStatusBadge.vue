@@ -11,10 +11,9 @@ defineProps<Props>();
 <template>
   <Badge :variant="isActive ? 'default' : 'secondary'" class="flex items-center gap-2">
     <span
-      class="w-2 h-2 rounded-full",
-      :class="[
-        isActive ? 'bg-secondary animate-pulse' : 'bg-muted-foreground',
-      ]"
+      class="w-2 h-2 rounded-full"
+      ,
+      :class="[isActive ? 'bg-secondary animate-pulse' : 'bg-muted-foreground']"
     ></span>
     {{ isActive ? "LIVE TRACKING" : "SYSTEM PAUSED" }}
   </Badge>
