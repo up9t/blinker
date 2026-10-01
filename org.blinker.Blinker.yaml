@@ -8,10 +8,15 @@ rename-desktop-file: app.desktop
 finish-args:
   - --socket=wayland
   - --socket=fallback-x11
+  - --socket=pulseaudio
   - --device=dri
   - --share=ipc
   # - --share=network
   - --env=GTK_THEME=Adwaita:dark
+
+  # Modern flatpak app doesn't need this to send notifications.
+  # but Tauri notification plugin at the time doesn't support portal. 
+  - --talk-name=org.freedesktop.Notifications
 
 modules:
   - name: blinker

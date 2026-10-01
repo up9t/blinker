@@ -7,12 +7,13 @@ import {
 async function permissionGranted() {
   const granted = await isPermissionGranted();
 
-  if (!granted) {
-    const permission = await requestPermission();
-    return permission === "granted";
+  if (granted) {
+    return true;
   }
 
-  return granted;
+  const permission = await requestPermission();
+
+  return permission === "granted";
 }
 
 function showNotification(title: string, body: string) {

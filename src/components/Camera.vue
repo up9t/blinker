@@ -250,7 +250,7 @@ onUnmounted(async () => {
 <template>
   <Card class="aspect-video relative">
     <CardHeader>
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-start">
         <CameraStatusBadge :is-active="isRunningRef" />
         <div class="text-right">
           <p class="text-muted-foreground text-xs uppercase tracking-[0.2em] font-bold mb-1">
