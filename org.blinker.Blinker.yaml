@@ -8,6 +8,7 @@ rename-desktop-file: app.desktop
 finish-args:
   - --socket=wayland
   - --socket=fallback-x11
+  - --socket=pulseaudio
   - --device=dri
   - --share=ipc
   # - --share=network
