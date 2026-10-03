@@ -68,21 +68,17 @@ function handleEyesClose() {
   if (!isEyesClose) {
     isEyesClose = true;
     incrementBlinkCounter();
+
+    if (!isRunningRef.value || props.isBreak) return;
+
+    hideOverlay();
+    resetTimeout(showOverlay);
   }
-
-  if (!isRunningRef.value || props.isBreak) return;
-
-  hideOverlay();
-  removeTimeout();
 }
 
 function handleEyesOpen() {
   if (isEyesClose) {
     isEyesClose = false;
-
-    if (!isRunningRef.value || props.isBreak) return;
-
-    resetTimeout(showOverlay);
   }
 }
 
@@ -91,7 +87,7 @@ function removeTimeout() {
 }
 
 function resetTimeout(callback: () => void) {
-  clearTimeout(blinkTimeoutId);
+  removeTimeout();
   blinkTimeoutId = setTimeout(callback, settings.blinkTimeout * 1000);
 }
 
@@ -182,7 +178,9 @@ async function startCamera(deviceId: string) {
     return;
   }
 
-  if (!videoElementRef.value) throw new Error("video element is undefined");
+  if (!videoElementRef.value) {
+    throw new Error("video element is undefined");
+  }
 
   videoElementRef.value.srcObject = stream;
 
