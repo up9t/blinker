@@ -126,6 +126,8 @@ flatpak run org.blinker.Blinker
     npx ts-path-alias-fixer --base ./src
     ```
 
+- If you run `npm update` don't forget to also run `cargo update` inside the `src-tauri` directory.
+
 ## FAQ
 
 ### What’s the purpose?
