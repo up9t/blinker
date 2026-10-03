@@ -35,7 +35,11 @@ export default defineConfig(async () => ({
       ignored: [
         "**/src-tauri/**",
         "**/.github/**",
-        "**/.vscode/**"
+        "**/.vscode/**",
+        "**/flatpak/**",
+        "**/.flatpak-builder/**",
+        "**/repo/**",
+        "**/build-dir/**",
       ],
     },
   },
