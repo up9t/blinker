@@ -120,6 +120,12 @@ flatpak run org.blinker.Blinker
     npm run tauri icon public/icon.svg
     ```
 
+- This command helps with import
+
+    ```bash
+    npx ts-path-alias-fixer --base ./src
+    ```
+
 ## FAQ
 
 ### What’s the purpose?

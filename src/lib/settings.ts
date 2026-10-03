@@ -1,8 +1,9 @@
 import { LazyStore } from "@tauri-apps/plugin-store";
-import type { Breakpoint, Theme } from "@/common/types";
-import { getRandomId } from "@/common/utils";
+import type { Breakpoint, Theme } from "@/types";
+import { getRandomId } from "@/utils";
+import { reactive, watch } from "vue";
 
-export interface Settings {
+export interface settings {
   thresholdEyesClosed: number;
   thresholdEyesOpened: number;
   blinkTimeout: number;
@@ -12,7 +13,7 @@ export interface Settings {
   autoStart: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: settings = {
   thresholdEyesClosed: 0.5,
   thresholdEyesOpened: 0.4,
   blinkTimeout: 1.0,
@@ -33,13 +34,13 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const STORE_KEY = "settings";
 
-export async function loadSettings(): Promise<Settings> {
+export async function loadSettings(): Promise<settings> {
   try {
     const store = new LazyStore("settings.json");
     const storedSettings = await store.get(STORE_KEY);
 
     if (storedSettings && typeof storedSettings === "object") {
-      const settings = storedSettings as Partial<Settings>;
+      const settings = storedSettings as Partial<settings>;
       return {
         ...DEFAULT_SETTINGS,
         ...settings,
@@ -57,7 +58,7 @@ export async function loadSettings(): Promise<Settings> {
   }
 }
 
-export async function saveSettings(settings: Settings): Promise<void> {
+export async function saveSettings(settings: settings): Promise<void> {
   try {
     const store = new LazyStore("settings.json");
     await store.set(STORE_KEY, settings);
@@ -67,10 +68,10 @@ export async function saveSettings(settings: Settings): Promise<void> {
   }
 }
 
-export async function resetToDefaults(): Promise<Settings> {
+export async function resetToDefaults(): Promise<settings> {
   try {
     const store = new LazyStore("settings.json");
-    const freshDefaults: Settings = {
+    const freshDefaults: settings = {
       ...DEFAULT_SETTINGS,
       breakpoints: DEFAULT_SETTINGS.breakpoints.map((bp) => ({
         ...bp,
@@ -84,4 +85,29 @@ export async function resetToDefaults(): Promise<Settings> {
     console.error("Failed to reset settings:", error);
     return DEFAULT_SETTINGS;
   }
+}
+
+export const settings = reactive<settings>(structuredClone(DEFAULT_SETTINGS));
+
+/**
+ * Watch for changes to settings and save them to the store (debounced)
+ */
+let saveTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+watch(
+  settings,
+  (newSettings) => {
+    if (saveTimeoutId) {
+      clearTimeout(saveTimeoutId);
+    }
+
+    saveTimeoutId = setTimeout(() => {
+      saveSettings(newSettings);
+    }, 500); // Debounce saves by 500ms
+  },
+  { deep: true },
+);
+
+export async function hydrateSettings(loadedSettings: settings) {
+  Object.assign(settings, loadedSettings);
 }

@@ -4,8 +4,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import App from "@/App.vue";
 import Main from "@/pages/Main.vue";
 import Overlay from "@/pages/Overlay.vue";
-import { loadSettings } from "@/settings";
-import { hydrateSettings } from "@/settings";
+import { loadSettings, hydrateSettings } from "@/lib/settings";
 import { applyTheme } from "@/lib/theme";
 
 const routes = [

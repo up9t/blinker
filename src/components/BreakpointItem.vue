@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Breakpoint } from "@/common/types";
+import type { Breakpoint } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import DurationInputPair from "./DurationInputPair.vue";
+import DurationInputPair from "@/components/DurationInputPair.vue";
 
 interface Props {
   breakpoint: Breakpoint;
