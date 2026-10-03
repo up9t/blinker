@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, watch, computed } from "vue";
-import audioSrc from "../assets/sounds/solemn-522.ogg";
-import { startBreak as callBreak, stopBreak as callStopBreak } from "../common/api";
-import type { Breakpoint } from "../common/types";
-import { getRandomId, toMs } from "../common/utils";
-import { defaultSettings as settings } from "../settings";
+import audioSrc from "@/assets/sounds/solemn-522.ogg";
+import { startBreak as callBreak, stopBreak as callStopBreak } from "@/lib/api";
+import type { Breakpoint } from "@/types";
+import { getRandomId, toMs } from "@/utils";
+import { settings } from "@/lib/settings";
 import { permissionGranted, showNotification } from "@/lib/notification";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import BreakpointItem from "./BreakpointItem.vue";
+import BreakpointItem from "@/components/BreakpointItem.vue";
+import { playAudio } from "@/lib/audio";
 
 const breakIntervals = new Map<string, number>();
 const notificationIntervals = new Map<string, number>();
@@ -55,35 +56,11 @@ function startBreak(ms: number) {
   callBreak(ms);
 }
 
-// this won't play on linux.
-// function playAudio() {
-//   new Audio(audioSrc).play();
-// }
-
-async function playAudio() {
-  try {
-    // 1. Initialize the Web Audio engine
-    const audioCtx = new window.AudioContext();
-
-    // 2. Fetch the bundled file as raw binary data
-    const response = await fetch(audioSrc);
-    const arrayBuffer = await response.arrayBuffer();
-
-    // 3. Decode the audio data in memory
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-    // 4. Play it
-    const source = audioCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioCtx.destination);
-    source.start(0);
-  } catch (error) {
-    console.error("Web Audio API failed to play sound:", error);
-  }
-}
-
 function stopBreak() {
-  playAudio();
+  playAudio(audioSrc).catch((error) => {
+    console.error("Web Audio API failed to play sound:", error);
+  });
+
   callStopBreak();
 }
 

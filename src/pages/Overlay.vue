@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { onBreakStart, onBreakStop, showOverlay } from "@/common/api";
+import { onBreakStart, onBreakStop, showOverlay } from "@/lib/api";
 
 const isBreak = ref<boolean>(false);
 const progress = ref(0);

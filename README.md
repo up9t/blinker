@@ -102,9 +102,9 @@ npm ci
 npm run tauri -- build --no-bundle
 
 # flatpak build
-flatpak-builder --repo=repo --force-clean build-dir/ org.blinker.Blinker.yaml
+flatpak-builder --repo=repo --force-clean build-dir/ ./flatpak/org.blinker.Blinker.yaml
 # if you don't want to use read only fuse file (e.g in container).
-# flatpak-builder --repo=repo --force-clean --disable-rofiles-fuse build-dir/ org.blinker.Blinker.yaml
+# flatpak-builder --repo=repo --force-clean --disable-rofiles-fuse build-dir/ ./flatpak/org.blinker.Blinker.yaml
 
 
 # install
@@ -118,6 +118,12 @@ flatpak run org.blinker.Blinker
 
     ```bash
     npm run tauri icon public/icon.svg
+    ```
+
+- This command helps with import
+
+    ```bash
+    npx ts-path-alias-fixer --base ./src
     ```
 
 ## FAQ

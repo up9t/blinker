@@ -2,13 +2,13 @@
 import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 import { onMounted, onUnmounted, ref, computed, useTemplateRef, watch } from "vue";
 import { Play, Pause } from "@lucide/vue";
-import { hideOverlay, onFocusChange, showOverlay } from "../common/api";
-import { clearCanvas, resizeCanvas } from "../common/utils";
-import { drawLandmark, setupLandmarker } from "../lib/mediapipe";
-import { defaultSettings as settings } from "../settings";
+import { hideOverlay, onFocusChange, showOverlay } from "@/lib/api";
+import { clearCanvas, resizeCanvas } from "@/utils";
+import { drawLandmark, setupLandmarker } from "@/lib/mediapipe";
+import { settings } from "@/lib/settings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import CameraStatusBadge from "./CameraStatusBadge.vue";
+import CameraStatusBadge from "@/components/CameraStatusBadge.vue";
 
 const props = defineProps<{
   selectedDeviceId: string;
