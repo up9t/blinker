@@ -1,27 +1,27 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue";
+import { useVModel } from "@vueuse/core";
 import { cn } from "@/lib/utils";
 
-const props = withDefaults(
-  defineProps<{
-    modelValue?: string | number;
-    type?: string;
-    class?: HTMLAttributes["class"];
-  }>(),
-  {
-    type: "text",
-  },
-);
+const props = defineProps<{
+  defaultValue?: string | number;
+  modelValue?: string | number;
+  class?: HTMLAttributes["class"];
+}>();
 
-const emit = defineEmits<{
+const emits = defineEmits<{
   (e: "update:modelValue", payload: string | number): void;
 }>();
+
+const modelValue = useVModel(props, "modelValue", emits, {
+  passive: true,
+  defaultValue: props.defaultValue,
+});
 </script>
 
 <template>
   <input
-    :type="type"
-    :value="modelValue"
+    v-model="modelValue"
     data-slot="input"
     :class="
       cn(
@@ -31,7 +31,5 @@ const emit = defineEmits<{
         props.class,
       )
     "
-    v-bind="$attrs"
-    @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
   />
 </template>

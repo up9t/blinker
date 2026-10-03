@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { settings, hydrateSettings } from "@/lib/settings";
-import { resetToDefaults } from "@/lib/settings";
+import { settings, hydrateSettings, resetToDefaults } from "@/lib/settings";
 import { showNotification } from "@/lib/notification";
 import { applyTheme, setStoredTheme } from "@/lib/theme";
 import { Card } from "@/components/ui/card";
@@ -109,8 +108,7 @@ async function handleReset() {
             <Input
               id="blink-timeout"
               type="number"
-              :model-value="settings.blinkTimeout"
-              @update:model-value="(v) => (settings.blinkTimeout = Number(v))"
+              v-model="settings.blinkTimeout"
               min="0.2"
               max="2"
               step="0.1"
@@ -122,8 +120,7 @@ async function handleReset() {
             <Input
               id="notify-before"
               type="number"
-              :model-value="settings.notifyBeforeSecond"
-              @update:model-value="(v) => (settings.notifyBeforeSecond = Number(v))"
+              v-model="settings.notifyBeforeSecond"
               min="5"
               max="300"
               step="1"
@@ -135,8 +132,7 @@ async function handleReset() {
             <Input
               id="eyes-closed"
               type="number"
-              :model-value="settings.thresholdEyesClosed"
-              @update:model-value="(v) => (settings.thresholdEyesClosed = Number(v))"
+              v-model="settings.thresholdEyesClosed"
               :min="settings.thresholdEyesOpened"
               max="1"
               step="0.05"
@@ -148,8 +144,7 @@ async function handleReset() {
             <Input
               id="eyes-opened"
               type="number"
-              :model-value="settings.thresholdEyesOpened"
-              @update:model-value="(v) => (settings.thresholdEyesOpened = Number(v))"
+              v-model="settings.thresholdEyesOpened"
               min="0.2"
               :max="settings.thresholdEyesClosed"
               step="0.05"
@@ -158,7 +153,7 @@ async function handleReset() {
         </div>
 
         <label class="flex items-center gap-2 cursor-pointer select-none">
-          <Checkbox v-model:model-value="settings.autoStart" />
+          <Checkbox v-model="settings.autoStart" />
           <span class="text-xs text-muted-foreground">Auto-start session on launch</span>
         </label>
       </div>
