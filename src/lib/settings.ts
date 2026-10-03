@@ -15,8 +15,8 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   thresholdEyesClosed: 0.5,
-  thresholdEyesOpened: 0.4,
-  blinkTimeout: 1.0,
+  thresholdEyesOpened: 0.5,
+  blinkTimeout: 1.2,
   notifyBeforeSecond: 20,
   breakpoints: [
     {

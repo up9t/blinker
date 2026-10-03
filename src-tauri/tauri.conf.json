@@ -17,6 +17,7 @@
         "title": "Blinker",
         "width": 1200,
         "height": 700,
+        "resizable": true,
         "url": "/"
       },
       {

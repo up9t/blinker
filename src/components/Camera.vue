@@ -118,16 +118,12 @@ function predictWebcam(now: number) {
     )
       return;
 
-    const newWidth = videoElementRef.value.videoWidth;
-    const newHeight = videoElementRef.value.videoHeight;
+    const video = videoElementRef.value;
 
-    if (canvas.width !== newWidth || canvas.height !== newHeight) {
-      resizeCanvas(canvas, newWidth, newHeight);
-    }
-
+    resizeCanvas(canvas, video.videoWidth, video.videoHeight);
     clearCanvas(ctx);
 
-    lastVideoTime = videoElementRef.value.currentTime;
+    lastVideoTime = video.currentTime;
     const results = faceLandmarker.detectForVideo(videoElementRef.value, now);
 
     if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
