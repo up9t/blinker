@@ -3,7 +3,7 @@ import type { Breakpoint, Theme } from "@/types";
 import { getRandomId } from "@/utils";
 import { reactive, watch } from "vue";
 
-export interface settings {
+export interface Settings {
   thresholdEyesClosed: number;
   thresholdEyesOpened: number;
   blinkTimeout: number;
@@ -13,7 +13,7 @@ export interface settings {
   autoStart: boolean;
 }
 
-export const DEFAULT_SETTINGS: settings = {
+export const DEFAULT_SETTINGS: Settings = {
   thresholdEyesClosed: 0.5,
   thresholdEyesOpened: 0.4,
   blinkTimeout: 1.0,
@@ -34,13 +34,13 @@ export const DEFAULT_SETTINGS: settings = {
 
 const STORE_KEY = "settings";
 
-export async function loadSettings(): Promise<settings> {
+export async function loadSettings(): Promise<Settings> {
   try {
     const store = new LazyStore("settings.json");
     const storedSettings = await store.get(STORE_KEY);
 
     if (storedSettings && typeof storedSettings === "object") {
-      const settings = storedSettings as Partial<settings>;
+      const settings = storedSettings as Partial<Settings>;
       return {
         ...DEFAULT_SETTINGS,
         ...settings,
@@ -58,7 +58,7 @@ export async function loadSettings(): Promise<settings> {
   }
 }
 
-export async function saveSettings(settings: settings): Promise<void> {
+export async function saveSettings(settings: Settings): Promise<void> {
   try {
     const store = new LazyStore("settings.json");
     await store.set(STORE_KEY, settings);
@@ -68,10 +68,10 @@ export async function saveSettings(settings: settings): Promise<void> {
   }
 }
 
-export async function resetToDefaults(): Promise<settings> {
+export async function resetToDefaults(): Promise<Settings> {
   try {
     const store = new LazyStore("settings.json");
-    const freshDefaults: settings = {
+    const freshDefaults: Settings = {
       ...DEFAULT_SETTINGS,
       breakpoints: DEFAULT_SETTINGS.breakpoints.map((bp) => ({
         ...bp,
@@ -87,7 +87,7 @@ export async function resetToDefaults(): Promise<settings> {
   }
 }
 
-export const settings = reactive<settings>(structuredClone(DEFAULT_SETTINGS));
+export const settings = reactive<Settings>(structuredClone(DEFAULT_SETTINGS));
 
 /**
  * Watch for changes to settings and save them to the store (debounced)
@@ -108,6 +108,6 @@ watch(
   { deep: true },
 );
 
-export async function hydrateSettings(loadedSettings: settings) {
+export async function hydrateSettings(loadedSettings: Settings) {
   Object.assign(settings, loadedSettings);
 }
