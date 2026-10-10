@@ -1,9 +1,0 @@
-[Desktop Entry]
-Categories=tool
-Comment=Eye helper
-Exec=blinker
-StartupWMClass=blinker
-Icon=blinker
-Name=blinker
-Terminal=false
-Type=Application

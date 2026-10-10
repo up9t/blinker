@@ -42,30 +42,45 @@ Downloads are available in AppImage, RPM/DEB, Flatpak and even Tarball.
 
 - Install System dependencies
 
-Fedora
-
+Debian:
 ```bash
-sudo dnf check-update
-sudo dnf install webkit2gtk4.1-devel \
-  openssl-devel \
-  curl \
-  wget \
-  file \
-  libappindicator-gtk3-devel \
-  librsvg2-devel \
-  libxdo-devel
-sudo dnf group install "c-development"
+sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
 ```
 
-- Install Rust & Cargo
+- [Install Go](https://go.dev/doc/install)
+
+```bash
+OUT_NAME=go.tar.gz
+sudo apt-get install -y curl
+curl -Lo $OUT_NAME https://go.dev/dl/go1.27.2.linux-amd64.tar.gz
+rm -rf /usr/local/go && sudo tar -C /usr/local -xzf $OUT_NAME
+rm $OUT_NAME
+
+# add to .bashrc
+export PATH=$PATH:/usr/local/go/bin
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
 
 - Install Node & Npm
 
+```bash
+sudo apt-get install -y curl
+curl -fsSL https://deb.nodesource.com/setup_26.x | sudo -E bash -
+sudo apt-get install -y nodejs
+node -v
+```
+
+- Install Wails
+
+```bash
+go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+```
+
 - Install Node dependencies:
 
-    ```bash
-    $ npm ci
-    ```
+```bash
+npm ci
+```
 
 ### Run dev server
 
