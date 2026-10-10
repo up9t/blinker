@@ -3,7 +3,7 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/up9t99)
 
 <p align="center">
-  <img width="128" height="128" alt="icon" src="./public/icon.svg" />
+  <img width="128" height="128" alt="icon" src="./frontend/public/icon.svg" />
 </p>
 
 <p align="center">
