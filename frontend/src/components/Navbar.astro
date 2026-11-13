@@ -1,0 +1,18 @@
+---
+const routes = [
+  {
+    title: "Camera",
+    path: "/",
+  },
+  {
+    title: "Breakpoints",
+    path: "/breakpoints",
+  },
+];
+---
+
+<nav class="flex justify-evenly border-4 border-blue-300">
+  {routes.map((r) => (
+    <a href={r.path}>{r.title}</a>
+  ))}
+</nav>

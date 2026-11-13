@@ -3,11 +3,11 @@
 		"file_version": "0.1.0"
 	},
 	"info": {
-		"0000": {
+		"0409": {
 			"ProductVersion": "0.1.0",
 			"CompanyName": "My Company",
-			"FileDescription": "A blinker application",
-			"LegalCopyright": "© 2026, My Company",
+			"FileDescription": "My Product Description",
+			"LegalCopyright": "© now, My Company",
 			"ProductName": "My Product",
 			"Comments": "This is a comment"
 		}

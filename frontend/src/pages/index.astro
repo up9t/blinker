@@ -1,0 +1,9 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { CameraWidget } from "@/components/CameraWidget.tsx";
+---
+
+<Layout>
+	<h1>Camera</h1>
+	<CameraWidget client:only />
+</Layout>
