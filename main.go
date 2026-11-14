@@ -4,11 +4,10 @@ import (
 	"embed"
 	"log/slog"
 	"os"
-	"sync/atomic"
-	"time"
 
 	"log"
 
+	"github.com/up9t/blinker/backend"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
@@ -45,21 +44,8 @@ func init() {
 func main() {
 	appName := "Blinker"
 
-	// timerChan <- newTimer(1minute)
-
-	// queue := []
-
-	waiting := atomic.Bool{}
-	waiting.Store(false)
-
-	for data := range timerChan {
-		go func() {
-			timer := time.NewTimer(5 * time.Minute)
-			<-timer.C
-		}()
-	}
-
 	notifier := notifications.New()
+	breakpointService := backend.NewBreakpointService()
 
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
@@ -70,7 +56,7 @@ func main() {
 		Name:        appName,
 		Description: "Helps lubricate eyes by forcing user to blink.",
 		Services: []application.Service{
-			application.NewService(&GreetService{}),
+			application.NewService(breakpointService),
 			application.NewService(notifier),
 		},
 		Assets: application.AssetOptions{
