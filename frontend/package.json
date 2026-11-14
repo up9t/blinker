@@ -11,7 +11,8 @@
     "build": "astro build",
     "build:dev": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "format": "oxfmt src/"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.2",

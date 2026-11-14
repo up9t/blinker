@@ -2,11 +2,16 @@ package main
 
 import (
 	"embed"
-
-	"log"
+	"log/slog"
+	"os"
+	"sync/atomic"
 	"time"
 
+	"log"
+
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 )
 
 // Wails uses Go's `embed` package to embed the frontend files into the binary.
@@ -16,6 +21,16 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+const (
+	WindowsEventHide         = "window:hide"
+	WindowsEventShow         = "window:show"
+	WindowsEventFocus        = "window:focus"
+	WindowsEventShowAndFocus = "window:show_and_focus"
+)
+const (
+	NotificationEventSend = "notification:send"
+)
 
 func init() {
 	// Register a custom event whose associated data type is string.
@@ -28,6 +43,23 @@ func init() {
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
 func main() {
+	appName := "Blinker"
+
+	// timerChan <- newTimer(1minute)
+
+	// queue := []
+
+	waiting := atomic.Bool{}
+	waiting.Store(false)
+
+	for data := range timerChan {
+		go func() {
+			timer := time.NewTimer(5 * time.Minute)
+			<-timer.C
+		}()
+	}
+
+	notifier := notifications.New()
 
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
@@ -35,10 +67,11 @@ func main() {
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
 	app := application.New(application.Options{
-		Name:        "Blinker",
-		Description: "Helps lubricate eyes by forcing to blink.",
+		Name:        appName,
+		Description: "Helps lubricate eyes by forcing user to blink.",
 		Services: []application.Service{
 			application.NewService(&GreetService{}),
+			application.NewService(notifier),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -53,8 +86,9 @@ func main() {
 	// 'Mac' options tailor the window when running on macOS.
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
+	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Blinker",
+		Name:  "main",
 		// Window sized to the golden ratio (1000 / 618 ≈ 1.618).
 		Width:  1000,
 		Height: 618,
@@ -65,17 +99,88 @@ func main() {
 		},
 		BackgroundColour: application.NewRGB(6, 7, 15),
 		URL:              "/",
+		Permissions: map[application.PermissionType]application.Permission{
+			application.PermissionCamera:     application.PermissionAllow,
+			application.PermissionMicrophone: application.PermissionAllow,
+		},
+	})
+
+	// overlay window
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title: "Overlay",
+		Name:  "overlay",
+		// Window sized to the golden ratio (1000 / 618 ≈ 1.618).
+		Width:  1000,
+		Height: 618,
+		Mac: application.MacWindow{
+			InvisibleTitleBarHeight: 50,
+			Backdrop:                application.MacBackdropTranslucent,
+			TitleBar:                application.MacTitleBarHiddenInset,
+		},
+		BackgroundColour: application.NewRGB(6, 7, 15),
+		URL:              "/overlay",
+		Hidden:           true,
+	})
+
+	mainWindow.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		windows := app.Window.GetAll()
+		for _, window := range windows {
+			window.Close()
+		}
+	})
+	mainWindow.OnWindowEvent(events.Common.WindowMinimise, func(event *application.WindowEvent) {
+		mainWindow.Hide()
+	})
+
+	// Create system tray
+	systray := app.SystemTray.New()
+	// systray.SetIcon(icon)
+	systray.SetLabel(appName)
+	systray.AttachWindow(mainWindow)
+
+	// Add menu
+	menu := app.NewMenu()
+	menu.Add("Show").OnClick(func(ctx *application.Context) {
+		// Show main window
+		mainWindow.Show()
+		mainWindow.Focus()
+	})
+	menu.Add("Quit").OnClick(func(ctx *application.Context) {
+		app.Quit()
+	})
+	systray.SetMenu(menu)
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	app.Event.On(NotificationEventSend, func(event *application.CustomEvent) {
+		data, ok := event.Data.(struct {
+			Title string `json:"title"`
+			Body  string `json:"body"`
+		})
+
+		if !ok {
+			logger.Error("failed to parse notification data", "data", data)
+			return
+		}
+
+		if err := notifier.SendNotification(notifications.NotificationOptions{
+			ID:    "blinker_notification_id",
+			Title: data.Title,
+			Body:  data.Body,
+		}); err != nil {
+			logger.Error("failed to send notification", "err", err)
+		}
 	})
 
 	// Create a goroutine that emits an event containing the current time every second.
 	// The frontend can listen to this event and update the UI accordingly.
-	go func() {
-		for {
-			now := time.Now().Format(time.RFC1123)
-			app.Event.Emit("time", now)
-			time.Sleep(time.Second)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		now := time.Now().Format(time.RFC1123)
+	// 		app.Event.Emit("time", now)
+	// 		time.Sleep(time.Second)
+	// 	}
+	// }()
 
 	// Run the application. This blocks until the application has been exited.
 	err := app.Run()

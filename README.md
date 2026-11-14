@@ -40,11 +40,22 @@ Downloads are available in AppImage, RPM/DEB, Flatpak and even Tarball.
 
 ### Install dependencies
 
+Visit https://wails.io/quick-start/installation/ for further information.
+
 - Install System dependencies
 
-Debian:
+**Debian**:
+
 ```bash
 sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+```
+
+**Fedora**:
+
+Also install pipewire-gstreamer.
+
+```bash
+sudo dnf install gcc pkg-config gtk4-devel webkitgtk6.0-devel pipewire-gstreamer
 ```
 
 - [Install Go](https://go.dev/doc/install)

@@ -12,7 +12,7 @@ export function CameraWidget() {
         eyeCloseThreshold={5.25 / 10}
         eyeOpenThreshold={5 / 10}
         onEyeClose={() => console.log("close")}
-        onEyeOpen={() => { }}
+        onEyeOpen={() => {}}
       />
 
       <CameraSelector onDeviceChange={(deviceId) => setUsedCamera(deviceId)} />

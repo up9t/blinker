@@ -23,7 +23,7 @@ export function CameraFrame(props: CameraFrameProps) {
   const canvasContextRef = useRef<CanvasRenderingContext2D | null>(null);
   const frameIdRef = useRef<number | null>(null);
   const gpuCanvasRef = useRef(document.createElement("canvas"));
-  const drawLandmarkFuncRef = useRef<IDrawLandmark>(() => { });
+  const drawLandmarkFuncRef = useRef<IDrawLandmark>(() => {});
   const lastVideoTimeRef = useRef(-1);
   const [pause, setPause] = useState(true);
 
@@ -91,58 +91,60 @@ export function CameraFrame(props: CameraFrameProps) {
       if (stream) {
         stopCameraStream(stream as MediaStream);
       }
-    }
+    };
   }, [props.deviceId]);
 
+  const frame = useCallback(
+    (now: number) => {
+      if (pause) {
+        cancelAnimationFrame(frameIdRef.current!);
+        frameIdRef.current = null;
+        return;
+      }
+      console.log(11);
 
-  const frame = useCallback((now: number) => {
-    if (pause) {
-      cancelAnimationFrame(frameIdRef.current!);
-      frameIdRef.current = null;
-      return;
-    }
-    console.log(11)
+      const video = videoElementRef.current;
+      const videoReady = (video?.readyState ?? 0) >= 2;
 
-    const video = videoElementRef.current;
-    const videoReady = (video?.readyState ?? 0) >= 2;
+      if (
+        video === null ||
+        canvasElementRef.current === null ||
+        !videoReady ||
+        video?.currentTime === lastVideoTimeRef.current
+      ) {
+        frameIdRef.current = requestAnimationFrame(frame);
+        return;
+      }
 
-    if (
-      video === null ||
-      canvasElementRef.current === null ||
-      !videoReady ||
-      video?.currentTime === lastVideoTimeRef.current
-    ) {
+      const result = getCameraResult(video, now, {
+        open: props.eyeOpenThreshold,
+        close: props.eyeCloseThreshold,
+      });
+
+      resizeCanvas(canvasElementRef.current, video.videoWidth, video.videoHeight);
+      clearCanvas(canvasElementRef.current.getContext("2d")!);
+
+      console.log(result);
+
+      if (!result.faceFound) {
+        frameIdRef.current = requestAnimationFrame(frame);
+        return; // don't continue
+      }
+
+      if (result.eyeClose) {
+        props.onEyeClose();
+      } else {
+        props.onEyeOpen();
+      }
+
+      if (result.faceLandmarkResult !== null) {
+        drawLandmarkFuncRef.current(result.faceLandmarkResult);
+      }
+
       frameIdRef.current = requestAnimationFrame(frame);
-      return;
-    }
-
-    const result = getCameraResult(video, now, {
-      open: props.eyeOpenThreshold,
-      close: props.eyeCloseThreshold,
-    });
-
-    resizeCanvas(canvasElementRef.current, video.videoWidth, video.videoHeight);
-    clearCanvas(canvasElementRef.current.getContext("2d")!);
-
-    console.log(result)
-
-    if (!result.faceFound) {
-      frameIdRef.current = requestAnimationFrame(frame);
-      return; // don't continue
-    }
-
-    if (result.eyeClose) {
-      props.onEyeClose();
-    } else {
-      props.onEyeOpen();
-    }
-
-    if (result.faceLandmarkResult !== null) {
-      drawLandmarkFuncRef.current(result.faceLandmarkResult);
-    }
-
-    frameIdRef.current = requestAnimationFrame(frame);
-  }, [pause, props.eyeOpenThreshold, props.eyeCloseThreshold, props.onEyeClose, props.onEyeOpen]);
+    },
+    [pause, props.eyeOpenThreshold, props.eyeCloseThreshold, props.onEyeClose, props.onEyeOpen],
+  );
 
   useEffect(() => {
     if (pause) {
@@ -161,13 +163,17 @@ export function CameraFrame(props: CameraFrameProps) {
 
     return function () {
       if (frameIdRef.current) cancelAnimationFrame(frameIdRef.current);
-    }
+    };
   }, [pause, frame]);
 
   return (
     <>
       <div className="aspect-video relative max-h-2/3">
-        <video ref={videoElementRef} autoPlay className="absolute size-full object-cover inset-0"></video>
+        <video
+          ref={videoElementRef}
+          autoPlay
+          className="absolute size-full object-cover inset-0"
+        ></video>
         <canvas ref={canvasElementRef} className="absolute size-full object-cover inset-0"></canvas>
       </div>
       <button onClick={() => setPause(!pause)}>{pause ? "Resume" : "Pause"}</button>
