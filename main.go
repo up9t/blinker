@@ -1,16 +1,17 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"log/slog"
 	"os"
 
 	"log"
 
-	"github.com/up9t/blinker/backend"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
+	_ "modernc.org/sqlite"
 )
 
 // Wails uses Go's `embed` package to embed the frontend files into the binary.
@@ -44,8 +45,33 @@ func init() {
 func main() {
 	appName := "Blinker"
 
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	ctx := context.Background()
+
 	notifier := notifications.New()
-	breakpointService := backend.NewBreakpointService()
+
+	dbPath := "./app.db"
+	db, err := NewSqliteDB(dbPath)
+
+	if err != nil {
+		logger.Error("failed to setup sqlite",
+			"path", dbPath,
+			"err", err,
+		)
+
+		return
+	}
+
+	defer db.Close()
+
+	breakpointRepo := NewBreakpointSqliteRepository("breakpoints", db)
+
+	if err := breakpointRepo.Migrate(ctx); err != nil {
+		logger.Error("Failed to do migration", "err", err)
+		return
+	}
+
+	breakpointService := NewBreakpointService(breakpointRepo)
 
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
@@ -109,10 +135,7 @@ func main() {
 	})
 
 	mainWindow.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		windows := app.Window.GetAll()
-		for _, window := range windows {
-			window.Close()
-		}
+		app.Quit()
 	})
 	mainWindow.OnWindowEvent(events.Common.WindowMinimise, func(event *application.WindowEvent) {
 		mainWindow.Hide()
@@ -135,8 +158,6 @@ func main() {
 		app.Quit()
 	})
 	systray.SetMenu(menu)
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	app.Event.On(NotificationEventSend, func(event *application.CustomEvent) {
 		data, ok := event.Data.(struct {
@@ -169,10 +190,8 @@ func main() {
 	// }()
 
 	// Run the application. This blocks until the application has been exited.
-	err := app.Run()
-
 	// If an error occurred while running the application, log it and exit.
-	if err != nil {
+	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
 }
