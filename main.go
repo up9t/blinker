@@ -50,7 +50,7 @@ func main() {
 
 	notifier := notifications.New()
 
-	dbPath := "./app.db"
+	dbPath := "./app.sqlite3"
 	db, err := NewSqliteDB(dbPath)
 
 	if err != nil {
