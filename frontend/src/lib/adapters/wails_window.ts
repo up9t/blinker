@@ -6,7 +6,10 @@ export class WailsWindowService implements IWindowService {
     await Window.Get(name).Hide();
   }
 
-  async showWindow(name: (typeof WindowsName)[keyof typeof WindowsName], focus: boolean = true): Promise<void> {
+  async showWindow(
+    name: (typeof WindowsName)[keyof typeof WindowsName],
+    focus: boolean = true,
+  ): Promise<void> {
     const window = Window.Get(name);
 
     await window.Show().then(() => {

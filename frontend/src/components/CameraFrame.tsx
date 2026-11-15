@@ -23,7 +23,7 @@ export function CameraFrame(props: CameraFrameProps) {
   const canvasContextRef = useRef<CanvasRenderingContext2D | null>(null);
   const frameIdRef = useRef<number | null>(null);
   const gpuCanvasRef = useRef(document.createElement("canvas"));
-  const drawLandmarkFuncRef = useRef<IDrawLandmark>(() => { });
+  const drawLandmarkFuncRef = useRef<IDrawLandmark>(() => {});
   const lastVideoTimeRef = useRef(-1);
   const [pause, setPause] = useState(true);
 
