@@ -25,7 +25,6 @@ Too focused doing your job and forget to blink? that's bad for your eyes, fortun
 - Multiple breakpoints
 - Breakpoint customization
 
-
 ## Todo 
 
 - If the user doesn’t have camera, it should have another method for reminding the user to blink, such as interval timer
@@ -93,31 +92,7 @@ go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 npm ci
 ```
 
-### Run dev server
-
-```bash
-npm run dev
-
-# or
-npm run tauri dev
-```
-
-### Build
-
-```bash 
-npm run tauri build
-```
-
-Build binary only
-
-```bash
-# release
-npm run tauri -- build --no-bundle
-
-# debug
-npm run tauri -- build --no-bundle --debug
-```
-
+<!-- Need update -->
 Build flatpak and run flatpak (manually)
 
 ```bash
@@ -138,6 +113,7 @@ flatpak --user install ./repo org.blinker.Blinker -y
 flatpak run org.blinker.Blinker
 ```
 
+<!-- Need updates -->
 ## Developer Notes
 
 - To automatically build the icons from a specific file:
