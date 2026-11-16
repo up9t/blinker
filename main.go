@@ -23,20 +23,21 @@ import (
 var assets embed.FS
 
 const (
-	WindowsEventHide         = "window:hide"
-	WindowsEventShow         = "window:show"
-	WindowsEventFocus        = "window:focus"
-	WindowsEventShowAndFocus = "window:show_and_focus"
-)
-const (
 	NotificationEventSend = "notification:send"
+)
+
+const (
+	BreakEventStart  = "break:start"
+	BreakEventFinish = "break:finish"
 )
 
 func init() {
 	// Register a custom event whose associated data type is string.
 	// This is not required, but the binding generator will pick up registered events
 	// and provide a strongly typed JS/TS API for them.
-	application.RegisterEvent[string]("time")
+	application.RegisterEvent[string](NotificationEventSend)
+	application.RegisterEvent[string](BreakEventStart)
+	application.RegisterEvent[string](BreakEventFinish)
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
@@ -72,6 +73,14 @@ func main() {
 	}
 
 	breakpointService := NewBreakpointService(breakpointRepo)
+	bpEvent, err := breakpointService.Start(ctx)
+
+	if err != nil {
+		logger.Error("Failed to start breakpoint service", "err", err)
+		return
+	}
+
+	defer breakpointService.Stop()
 
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
@@ -118,7 +127,7 @@ func main() {
 	})
 
 	// overlay window
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
+	overlayWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Overlay",
 		Name:  "overlay",
 		// Window sized to the golden ratio (1000 / 618 ≈ 1.618).
@@ -179,15 +188,26 @@ func main() {
 		}
 	})
 
-	// Create a goroutine that emits an event containing the current time every second.
-	// The frontend can listen to this event and update the UI accordingly.
-	// go func() {
-	// 	for {
-	// 		now := time.Now().Format(time.RFC1123)
-	// 		app.Event.Emit("time", now)
-	// 		time.Sleep(time.Second)
-	// 	}
-	// }()
+	go func() {
+		for ev := range bpEvent {
+			if ctx.Err() != nil {
+				return
+			}
+
+			bp := ev.data
+			switch ev.typ {
+			case BreakpointEventStartBreak:
+				app.Event.Emit(BreakEventStart, bp)
+				// overlayWindow.SetHTML()
+				overlayWindow.SetURL("/break")
+				overlayWindow.Show()
+			case BreakpointEventFinishBreak:
+				overlayWindow.SetURL("/overlay")
+				overlayWindow.Hide()
+				app.Event.Emit(BreakEventFinish, bp)
+			}
+		}
+	}()
 
 	// Run the application. This blocks until the application has been exited.
 	// If an error occurred while running the application, log it and exit.

@@ -9,7 +9,17 @@ import type {} from "../github.com/wailsapp/wails/v3/internal/eventdata.js";
 import "../github.com/wailsapp/wails/v3/internal/eventcreate.js";
 
 /**
- * Name of the custom event "time".
+ * Name of the custom event "break:finish".
  */
-export const Time = "time";
+export const BreakFinish = "break:finish";
+
+/**
+ * Name of the custom event "break:start".
+ */
+export const BreakStart = "break:start";
+
+/**
+ * Name of the custom event "notification:send".
+ */
+export const NotificationSend = "notification:send";
 

@@ -33,6 +33,25 @@ export function Remove(id: string): $CancellablePromise<void> {
     return $Call.ByID(2476331818, id);
 }
 
+export function Start(): $CancellablePromise<any> {
+    return $Call.ByID(2716863422);
+}
+
+/**
+ * this function is blocking
+ */
+export function StartBreakpoint(bp: $models.Breakpoint): $CancellablePromise<void> {
+    return $Call.ByID(573003361, bp);
+}
+
+export function Stop(): $CancellablePromise<void> {
+    return $Call.ByID(1060700486);
+}
+
+export function StopBreakpoint(id: string): $CancellablePromise<void> {
+    return $Call.ByID(1160358985, id);
+}
+
 export function Update(bp: $models.Breakpoint): $CancellablePromise<$models.Breakpoint> {
     return $Call.ByID(1852252855, bp);
 }

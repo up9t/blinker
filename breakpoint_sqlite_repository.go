@@ -19,7 +19,6 @@ func NewBreakpointSqliteRepository(table string, db *sql.DB) *BreakpointSqliteRe
 }
 
 func (repo *BreakpointSqliteRepository) Migrate(ctx context.Context) error {
-	fmt.Println("WWWWWWWWWWWWWWWWWWWWWWWWWWW")
 	_, err := repo.db.ExecContext(ctx, fmt.Sprintf(`CREATE TABLE %s (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
