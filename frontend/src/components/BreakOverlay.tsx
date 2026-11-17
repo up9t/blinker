@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Events } from "@wailsio/runtime";
 import { BreakStart } from "../../bindings/events/index.js";
 import { WailsBreakpointService } from "../lib/adapters/wails_breakpoint.ts";
-import { formatCountdown, remainingMs } from "../lib/breakpoint.ts";
+import { POSTPONE_DELAY_MS, formatCountdown, remainingMs } from "../lib/breakpoint.ts";
 import type { IBreakInfo } from "../lib/ports/breakpoint.ts";
 
 const breakpointService = new WailsBreakpointService();
@@ -51,7 +51,7 @@ export function BreakOverlay() {
     setPostponing(true);
 
     try {
-      await breakpointService.postpone();
+      await breakpointService.postpone(POSTPONE_DELAY_MS);
       setInfo(null);
     } catch (err) {
       console.error("Failed to postpone the break", err);
@@ -75,7 +75,7 @@ export function BreakOverlay() {
       <p>Current time: {new Date(now).toLocaleTimeString()}</p>
 
       <button type="button" onClick={postpone} disabled={postponing}>
-        Postpone 30s
+        Postpone {POSTPONE_DELAY_MS / 1000}s
       </button>
     </main>
   );

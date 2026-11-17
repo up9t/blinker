@@ -73,8 +73,8 @@ describe("WailsBreakpointService", () => {
 
     expect(await service.activeBreak()).toBeNull();
 
-    await service.postpone();
+    await service.postpone(30_000);
 
-    expect(bindings.Postpone).toHaveBeenCalledOnce();
+    expect(bindings.Postpone).toHaveBeenCalledWith(30_000);
   });
 });

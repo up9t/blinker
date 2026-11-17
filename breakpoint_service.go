@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -290,8 +291,16 @@ func (svc *BreakpointService) ActiveBreak() *BreakInfo {
 }
 
 // Postpone snoozes the running break: it ends now and that breakpoint reminds again after
-// breakpointPostponeDelay. A break that was queued while this one was up starts right away.
-func (svc *BreakpointService) Postpone() error {
+// delayMs. The frontend owns the delay, so tuning the snooze is a frontend constant.
+// A break that was queued while this one was up starts right away.
+func (svc *BreakpointService) Postpone(delayMs int) error {
+	delay := time.Duration(delayMs) * time.Millisecond
+
+	if delay < time.Second || delay > breakpointMaxInterval {
+		return fmt.Errorf("postpone delay must be between 1s and %s, got %s",
+			breakpointMaxInterval, delay)
+	}
+
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -301,7 +310,7 @@ func (svc *BreakpointService) Postpone() error {
 		return nil
 	}
 
-	svc.armNextIntervalLocked(finished, breakpointPostponeDelay)
+	svc.armNextIntervalLocked(finished, delay)
 	svc.startQueuedBreakLocked()
 
 	return nil

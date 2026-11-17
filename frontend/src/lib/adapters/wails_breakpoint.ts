@@ -39,7 +39,7 @@ export class WailsBreakpointService implements IBreakpointService {
     return await BreakpointService.ActiveBreak();
   }
 
-  async postpone(): Promise<void> {
-    await BreakpointService.Postpone();
+  async postpone(delayMs: number): Promise<void> {
+    await BreakpointService.Postpone(delayMs);
   }
 }

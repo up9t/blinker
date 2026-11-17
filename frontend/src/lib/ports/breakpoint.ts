@@ -45,5 +45,5 @@ export interface IBreakpointService {
 
   // the break overlay reads this on mount and after a queued break starts
   activeBreak(): Promise<IBreakInfo | null>;
-  postpone(): Promise<void>;
+  postpone(delayMs: number): Promise<void>;
 }

@@ -37,9 +37,6 @@ const (
 
 	breakpointMaxInterval = 24 * time.Hour
 	breakpointMaxDuration = time.Hour
-
-	// snooze: end the current break now, remind again in 30s
-	breakpointPostponeDelay = 30 * time.Second
 )
 
 // json tags are what the binding generator uses for the frontend field names

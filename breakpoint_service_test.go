@@ -465,7 +465,8 @@ func TestBreakpointServicePostponeSnoozes(t *testing.T) {
 
 	postponedAt := time.Now()
 
-	if err := svc.Postpone(); err != nil {
+	// what the break overlay sends today: a 30s snooze
+	if err := svc.Postpone(30_000); err != nil {
 		t.Fatal(err)
 	}
 
@@ -475,7 +476,7 @@ func TestBreakpointServicePostponeSnoozes(t *testing.T) {
 		t.Fatalf("the break kept running for %s after postpone", ended)
 	}
 
-	// not the normal 1ms interval: the snooze is 30s (scaled to 30ms)
+	// not the normal 1ms interval: the 30s snooze scaled to 30ms
 	expectNoBreakpointEvent(t, events, 10*time.Millisecond)
 	waitBreakpointEvent(t, events, BreakpointEventStartBreak)
 
@@ -498,7 +499,7 @@ func TestBreakpointServicePostponeStartsQueuedBreakRightAway(t *testing.T) {
 
 	first := waitBreakpointEvent(t, events, BreakpointEventStartBreak)
 
-	if err := svc.Postpone(); err != nil {
+	if err := svc.Postpone(30_000); err != nil {
 		t.Fatal(err)
 	}
 
@@ -514,11 +515,21 @@ func TestBreakpointServicePostponeWithoutBreakIsANoOp(t *testing.T) {
 	svc := newTestBreakpointService(newFakeBreakpointRepository())
 	events := startTestBreakpointService(t, svc)
 
-	if err := svc.Postpone(); err != nil {
+	if err := svc.Postpone(30_000); err != nil {
 		t.Fatal(err)
 	}
 
 	expectNoBreakpointEvent(t, events, 50*time.Millisecond)
+}
+
+func TestBreakpointServicePostponeValidatesTheDelay(t *testing.T) {
+	svc := newTestBreakpointService(newFakeBreakpointRepository())
+
+	for _, delayMs := range []int{0, -1, 999, 24*60*60*1000 + 1} {
+		if err := svc.Postpone(delayMs); err == nil {
+			t.Fatalf("%d ms: expected a validation error", delayMs)
+		}
+	}
 }
 
 func TestBreakpointServiceActiveBreak(t *testing.T) {

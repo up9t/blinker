@@ -1,3 +1,7 @@
+// how far the "Postpone" button pushes the next break away. Tune it here; the backend
+// only validates the value the overlay sends.
+export const POSTPONE_DELAY_MS = 30_000;
+
 // the break overlay counts down from a deadline, so a slow tick can't drift
 export function remainingMs(endsAt: number, now: number): number {
   return Math.max(0, endsAt - now);

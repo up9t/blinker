@@ -46,10 +46,11 @@ export function List(): $CancellablePromise<$models.Breakpoint[] | null> {
 
 /**
  * Postpone snoozes the running break: it ends now and that breakpoint reminds again after
- * breakpointPostponeDelay. A break that was queued while this one was up starts right away.
+ * delayMs. The frontend owns the delay, so tuning the snooze is a frontend constant.
+ * A break that was queued while this one was up starts right away.
  */
-export function Postpone(): $CancellablePromise<void> {
-    return $Call.ByID(2647927284);
+export function Postpone(delayMs: number): $CancellablePromise<void> {
+    return $Call.ByID(2647927284, delayMs);
 }
 
 export function Remove(id: string): $CancellablePromise<void> {

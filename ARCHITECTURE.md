@@ -71,8 +71,10 @@ A breakpoint is a row in its own `breakpoints` table (own domain, never mixed wi
    the service rearms that breakpoint's interval timer: the cycle repeats.
 5. A break that comes due while another break is on screen is queued, not replaced, and
    starts as soon as the running one ends.
-6. `Postpone()` snoozes: the running break ends now and that breakpoint reminds again after
-   30 seconds. A break already in the queue starts right away.
+6. `Postpone(delayMs)` snoozes: the running break ends now and that breakpoint reminds again
+   after the delay the frontend sends. The delay is a frontend constant
+   (`POSTPONE_DELAY_MS`, 30s today) and the backend only validates it. A break already in the
+   queue starts right away.
 
 The timers share the camera timers' pattern (one mutex, a generation counter per breakpoint so
 a stale timer can't fire, and no event channel close while callbacks may still run). Every
