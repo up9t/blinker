@@ -1,30 +1,45 @@
 import {
-  DurationUnit,
+  type IBreakInfo,
   type IBreakpoint,
   type IBreakpointService,
   type IBreakpointWithoutID,
 } from "../ports/breakpoint.ts";
+import { BreakpointService } from "../../../bindings/github.com/up9t/blinker/index.js";
 
 export class WailsBreakpointService implements IBreakpointService {
-  private static readonly DEFAULT_VALUE = {
-    interval: 20,
-    intervalUnit: DurationUnit.MINUTE,
-    duration: 20,
-    durationUnit: DurationUnit.SECOND,
-    enabled: true,
-  };
+  async add(point: IBreakpointWithoutID): Promise<IBreakpoint> {
+    return await BreakpointService.Add({ ...point, id: "" });
+  }
 
-  add(point: IBreakpointWithoutID): Promise<IBreakpoint | Error> {}
+  async getById(id: IBreakpoint["id"]): Promise<IBreakpoint> {
+    return await BreakpointService.GetByID(id);
+  }
 
-  disable(id: IBreakpoint["id"]): Promise<void | Error> {}
+  async list(): Promise<IBreakpoint[]> {
+    return (await BreakpointService.List()) ?? [];
+  }
 
-  enable(id: IBreakpoint["id"]): Promise<void | Error> {}
+  async disable(id: IBreakpoint["id"]): Promise<void> {
+    await BreakpointService.Disable(id);
+  }
 
-  getById(id: IBreakpoint["id"]): Promise<IBreakpoint | Error> {}
+  async enable(id: IBreakpoint["id"]): Promise<void> {
+    await BreakpointService.Enable(id);
+  }
 
-  list(): Promise<IBreakpoint[]> {}
+  async remove(id: IBreakpoint["id"]): Promise<void> {
+    await BreakpointService.Remove(id);
+  }
 
-  remove(id: IBreakpoint["id"]): Promise<void | Error> {}
+  async update(point: IBreakpoint): Promise<IBreakpoint> {
+    return await BreakpointService.Update(point);
+  }
 
-  update(point: IBreakpoint): Promise<IBreakpoint | Error> {}
+  async activeBreak(): Promise<IBreakInfo | null> {
+    return await BreakpointService.ActiveBreak();
+  }
+
+  async postpone(): Promise<void> {
+    await BreakpointService.Postpone();
+  }
 }

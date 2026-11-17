@@ -1,7 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { BreakpointPanel } from "@/components/BreakpointPanel.tsx";
 ---
 
 <Layout>
-  <h1>Asset</h1>
+	<h1>Breakpoints</h1>
+	<BreakpointPanel client:only />
 </Layout>

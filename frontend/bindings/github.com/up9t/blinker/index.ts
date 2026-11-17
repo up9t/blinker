@@ -10,7 +10,12 @@ export {
     CameraService
 };
 
+export {
+    DurationUnitType
+} from "./models.js";
+
 export type {
     BlinkSettings,
+    BreakInfo,
     Breakpoint
 } from "./models.js";

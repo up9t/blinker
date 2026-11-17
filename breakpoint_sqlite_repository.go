@@ -40,13 +40,13 @@ func (repo *BreakpointSqliteRepository) Create(ctx context.Context, bp Breakpoin
 		duration, 
 		duration_unit, 
 		enabled
-	) VALUES (?, ?, ?, ?, ?)`, repo.table),
-		bp.name,
-		bp.interval,
-		bp.intervalUnit,
-		bp.duration,
-		bp.durationUnit,
-		bp.enabled,
+	) VALUES (?, ?, ?, ?, ?, ?)`, repo.table),
+		bp.Name,
+		bp.Interval,
+		bp.IntervalUnit,
+		bp.Duration,
+		bp.DurationUnit,
+		bp.Enabled,
 	)
 
 	if err != nil {
@@ -57,7 +57,7 @@ func (repo *BreakpointSqliteRepository) Create(ctx context.Context, bp Breakpoin
 }
 
 func (repo *BreakpointSqliteRepository) GetByID(ctx context.Context, id string) (Breakpoint, error) {
-	bp := Breakpoint{id: id}
+	bp := Breakpoint{ID: id}
 	err := repo.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT
 		name,
 		interval, 
@@ -66,12 +66,12 @@ func (repo *BreakpointSqliteRepository) GetByID(ctx context.Context, id string) 
 		duration_unit, 
 		enabled
 	FROM %s WHERE id = ?`, repo.table), id).Scan(
-		&bp.name,
-		&bp.interval,
-		&bp.intervalUnit,
-		&bp.duration,
-		&bp.durationUnit,
-		&bp.enabled,
+		&bp.Name,
+		&bp.Interval,
+		&bp.IntervalUnit,
+		&bp.Duration,
+		&bp.DurationUnit,
+		&bp.Enabled,
 	)
 
 	if err != nil {
@@ -107,13 +107,13 @@ func (repo *BreakpointSqliteRepository) List(ctx context.Context) ([]Breakpoint,
 
 		bp := Breakpoint{}
 		err := rows.Scan(
-			&bp.id,
-			&bp.name,
-			&bp.interval,
-			&bp.intervalUnit,
-			&bp.duration,
-			&bp.durationUnit,
-			&bp.enabled,
+			&bp.ID,
+			&bp.Name,
+			&bp.Interval,
+			&bp.IntervalUnit,
+			&bp.Duration,
+			&bp.DurationUnit,
+			&bp.Enabled,
 		)
 
 		if err != nil {
@@ -152,11 +152,11 @@ func (repo *BreakpointSqliteRepository) Update(ctx context.Context, bp Breakpoin
 			duration = ?,
 			duration_unit = ?,
 			enabled = ? 
-	WHERE id = ?`, repo.table), bp.name, bp.interval, bp.intervalUnit, bp.duration, bp.durationUnit, bp.enabled, bp.id)
+	WHERE id = ?`, repo.table), bp.Name, bp.Interval, bp.IntervalUnit, bp.Duration, bp.DurationUnit, bp.Enabled, bp.ID)
 
 	if err != nil {
 		return Breakpoint{}, err
 	}
 
-	return repo.GetByID(ctx, bp.id)
+	return repo.GetByID(ctx, bp.ID)
 }

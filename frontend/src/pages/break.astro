@@ -1,7 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { BreakOverlay } from "@/components/BreakOverlay.tsx";
 ---
 
 <Layout nav={false}>
-  <h1>This is a BREAK</h1>
+	<BreakOverlay client:only />
 </Layout>

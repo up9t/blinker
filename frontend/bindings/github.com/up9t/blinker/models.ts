@@ -10,5 +10,34 @@ export interface BlinkSettings {
     "blinkTimeoutMs": number;
 }
 
-export interface Breakpoint {
+/**
+ * only what the break overlay needs, sent with the start event
+ */
+export interface BreakInfo {
+    "name": string;
+    "remainingMs": number;
 }
+
+/**
+ * json tags are what the binding generator uses for the frontend field names
+ */
+export interface Breakpoint {
+    "id": string;
+    "name": string;
+    "interval": number;
+    "intervalUnit": DurationUnitType;
+    "duration": number;
+    "durationUnit": DurationUnitType;
+    "enabled": boolean;
+}
+
+export type DurationUnitType = string;
+
+/**
+ * Predefined constants for type DurationUnitType.
+ * @namespace
+ */
+export const DurationUnitType = {
+    DurationUnitSecond: "second",
+    DurationUnitMinute: "minute",
+};

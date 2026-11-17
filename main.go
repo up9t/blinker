@@ -26,10 +26,7 @@ const (
 	NotificationEventSend = "notification:send"
 )
 
-const (
-	BreakEventStart  = "break:start"
-	BreakEventFinish = "break:finish"
-)
+const BreakEventStart = "break:start"
 
 const (
 	overlayModeNone = iota
@@ -51,8 +48,7 @@ func init() {
 	// This is not required, but the binding generator will pick up registered events
 	// and provide a strongly typed JS/TS API for them.
 	application.RegisterEvent[string](NotificationEventSend)
-	application.RegisterEvent[string](BreakEventStart)
-	application.RegisterEvent[string](BreakEventFinish)
+	application.RegisterEvent[BreakInfo](BreakEventStart)
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
@@ -283,18 +279,14 @@ func main() {
 	go func() {
 		for {
 			select {
-			case ev, ok := <-bpEvent:
-				if !ok {
-					bpEvent = nil
-					continue
-				}
-
-				bp := ev.data
+			case ev := <-bpEvent:
 				switch ev.typ {
 				case BreakpointEventStartBreak:
+					// a break is more important than a blink reminder, it takes the overlay
 					overlayMode = overlayModeBreak
-					app.Event.Emit(BreakEventStart, bp)
-					// overlayWindow.SetHTML()
+					// the break page is already mounted when a queued break starts, so it
+					// gets the info from the event and reads ActiveBreak() only on mount
+					app.Event.Emit(BreakEventStart, ev.data)
 					overlayWindow.SetURL("/break/")
 					overlayWindow.Show()
 				case BreakpointEventFinishBreak:
@@ -302,7 +294,6 @@ func main() {
 						overlayMode = overlayModeNone
 						overlayWindow.Hide()
 					}
-					app.Event.Emit(BreakEventFinish, bp)
 				}
 			case ev := <-cameraEvent:
 				switch ev.typ {

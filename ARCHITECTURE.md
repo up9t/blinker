@@ -53,8 +53,33 @@ restart. General app settings (editor path, ...) are a separate concern, not the
 
 ## Break Strategy
 
-Reminder to take a quick rest, like 202020 rule, for eyes and move body to keep them healthy.
+Reminder to take a quick rest, like the 202020 rule, for eyes and to move the body. A user can
+have several breakpoints at once.
 
-1. User set a breakpoint (break interval, break duration)
-2. When interval time is done, show the same overlay window but with different url or page than the blink overlay, with better ui to show info such as time left, button to postpone 30 seconds, and show current time.
-3. After break overlay showed for a X duration, kicks the cycle again.
+A breakpoint is a row in its own `breakpoints` table (own domain, never mixed with
+`blink_settings` or global settings): name, break interval, break duration, enabled.
+`BreakpointService` (`breakpoint_service.go`) owns the whole schedule in the backend:
+
+1. `Start` loads the stored breakpoints before the windows open and arms one interval timer
+   per enabled breakpoint.
+2. When an interval is due and no break is on screen, the service starts the break, emits
+   `StartBreak`, and arms the duration timer.
+3. `main.go` shows the shared overlay window with `/break/` and passes the `BreakInfo`
+   payload through the `break:start` event. The page also reads `ActiveBreak()` on mount, so
+   it hydrates whether or not the page was already loaded.
+4. When the duration is over the service emits `FinishBreak`, `main.go` hides the overlay and
+   the service rearms that breakpoint's interval timer: the cycle repeats.
+5. A break that comes due while another break is on screen is queued, not replaced, and
+   starts as soon as the running one ends.
+6. `Postpone()` snoozes: the running break ends now and that breakpoint reminds again after
+   30 seconds. A break already in the queue starts right away.
+
+The timers share the camera timers' pattern (one mutex, a generation counter per breakpoint so
+a stale timer can't fire, and no event channel close while callbacks may still run). Every
+duration goes through one `speedup` division that stays 1 in production, so tests run a 20
+minute cycle in milliseconds.
+
+The Breakpoints page (`BreakpointPanel`) hydrates from `List()` on mount and writes every
+add, update, enable/disable and delete immediately. The break overlay (`BreakOverlay`) only
+reads `ActiveBreak()`, listens for `break:start` and calls `Postpone()`, so no break state
+lives in the frontend.

@@ -9,12 +9,19 @@
   - [x] Simple camera indicator (badge or something) (active/paused)
   - [x] Tweak/Config/Settings for the blink parameter such as eye close/open threshold and timeout for blink. This one needs to persist/store the data to the backend, and automatically hydrate/load/sync the settings when relaunch/mount/reload the app.
   <!-- detection keeps running while "hidden": the window is moved off screen (x11) or shrunk to 1x1 frameless (wayland), since a hidden/minimised window stops rAF -->
-- [] Breakpoint
-  - Multiple Breakpoints
-  - Postpone feature (button on the overlay window)
-  - Queue break instead of replace if overlap
-  - Customize break UI, through Overlay Editor (see below)
-- [] Overlay Editor
+- [x] Breakpoint
+  - [x] Breakpoint page (breakpoints.astro)
+  - [x] Breakpoint Widget/Panel/both to create/modify/delete breakpoints (settings like Break Interval then Break Duration, disable/enable, title/name)
+  - [x] Add test for the backend including the breakpoint service.
+  - [x] Tweak the existing breakpoint service if necessary.
+  - [x] Support multiple breakpoints.
+  - [x] Postpone feature on break (button on the overlay window)
+  - [x] Queue break duration if overlap instead of replace.
+  - [x] Save settings data to the backend and automatically hydrate/sync on launch/relaunch/mount/reload the app. This settings is in its own boundary/domain, don't mess with other settings like blink_settings or general/global settings.
+  - [x] Add test to the frontend.
+  - (later needs overlay editor) Asset selection dropdown to customize audio/sound and layout.
+  - (later needs overlay editor) Customize break UI, through Overlay Editor (see below)
+- [] Overlay/Break Editor
   - Show/preview using the base layout + the customized user content as the child component
   - Select file from assets manager (dropdown options + open in editor button)
   - Live preview, when there is change in the file in the selected option, automatically mirror the change in the browser.
@@ -23,7 +30,7 @@
   - Blink count this day (per hour)
     Graph: Today (hourly), This week (Per day), This month (Per day)
     Total: Today, this week, this month
-- [] Settings
+- [] Settings (Global settings)
   - Editor path and argument
 - [] Tray
   - Active as system tray when hide.
