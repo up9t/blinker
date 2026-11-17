@@ -11,6 +11,17 @@ Storage: Sqlite (Store user settings/preferences)
 - `main.go` -> backend entry point
 - `frontend/` -> frontend directory
 
+### Backend
+
+- Write idiomatic, effective Go.
+- Use clean architecture, separation between business logic, app logic, and adapter for external libraries. Domain layer shouldn't be using any external libraries.
+
+### Frontend
+
+- Use ports(interface)/adapters pattern when communicating with external libraries. Goal is to easily change the backend/library when needed.
+- Separation of concerns.
+- Keep the component script/logic thin.
+
 ## Blink Strategy
 
 1. Setup a camera.

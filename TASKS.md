@@ -3,7 +3,7 @@
 - [] Camera
   - Blink Detector
   <!-- - Camera Selection (Done) -->
-  - Screen time
+  - Screen time (face detect -> send event -> timer run on backend, face undetect -> send event -> timer stop), store data to sqlite, with buffered/timeout/aggregated/debounce.
   - Blink Count
   - Enter efficiency mode when the user isn't on screen for a few seconds, simple timeout to detect if the user is back on screen.
 - [] Breakpoint
@@ -37,6 +37,8 @@
   - Update logo 
 - [] Web (developer job, DO NOT INTERFERE!)
   - Make a website or landing page about this project 
+- [] Flatpak
+  - Change flatpak name from org.blinker.Blinker to ... wait I haven't think of it yet. Ignore this one.
 - [] Docs
   - Update the showcase images
   - Update README.md
