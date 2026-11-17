@@ -41,8 +41,10 @@ export function CameraFrame(props: CameraFrameProps) {
     const drawLandmark: IDrawLandmark = setupDrawLandmark(context2d);
 
     detectorRef.current = new CameraDetector(video, canvas, {
-      eyeCloseThreshold: propsRef.current.eyeCloseThreshold,
-      eyeOpenThreshold: propsRef.current.eyeOpenThreshold,
+      getThresholds: () => ({
+        close: propsRef.current.eyeCloseThreshold,
+        open: propsRef.current.eyeOpenThreshold,
+      }),
       onBlink: () => propsRef.current.onBlink(),
       onFaceDetected: () => propsRef.current.onFaceDetected(),
       onFaceLost: () => propsRef.current.onFaceLost(),
@@ -69,6 +71,8 @@ export function CameraFrame(props: CameraFrameProps) {
     };
   }, [pause, props.deviceId]);
 
+  const active = !pause && props.deviceId !== "";
+
   return (
     <div className="aspect-video relative max-h-2/3 border-4 border-red-400">
       <video
@@ -78,6 +82,10 @@ export function CameraFrame(props: CameraFrameProps) {
         className="absolute size-full object-cover inset-0"
       ></video>
       <canvas ref={canvasElementRef} className="absolute size-full object-cover inset-0"></canvas>
+      <p className="absolute top-2 left-2 flex items-center gap-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
+        <span className={`size-2 rounded-full ${active ? "bg-green-400" : "bg-neutral-400"}`} />
+        {active ? "Active" : "Paused"}
+      </p>
       <button
         aria-label={pause ? "Start camera" : "Pause camera"}
         className="absolute inset-0 m-auto size-14 rounded-full bg-black/50 text-white grid place-items-center"

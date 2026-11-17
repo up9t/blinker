@@ -104,7 +104,21 @@ func main() {
 
 	defer breakpointService.Stop()
 
-	cameraService := NewCameraService(cameraRepo)
+	blinkSettingsRepo := NewBlinkSettingsSqliteRepository(db)
+
+	if err := blinkSettingsRepo.Migrate(ctx); err != nil {
+		logger.Error("Failed to migrate blink settings table", "err", err)
+		return
+	}
+
+	blinkSettingsService := NewBlinkSettingsService(blinkSettingsRepo)
+
+	if err := blinkSettingsService.Start(ctx); err != nil {
+		logger.Error("Failed to load blink settings", "err", err)
+		return
+	}
+
+	cameraService := NewCameraService(cameraRepo, blinkSettingsService.blinkTimeout)
 	cameraEvent := cameraService.Start()
 
 	defer cameraService.Stop()
@@ -120,6 +134,7 @@ func main() {
 		Services: []application.Service{
 			application.NewService(breakpointService),
 			application.NewService(cameraService),
+			application.NewService(blinkSettingsService),
 			application.NewService(notifier),
 		},
 		Assets: application.AssetOptions{

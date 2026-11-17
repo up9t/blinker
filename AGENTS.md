@@ -20,3 +20,7 @@ To run `npm` command you must first enter the `frontend` directory. `cd frontend
 - `npm run dev -- --port 8080` run astro server with port 8080 .
 - `npm run format` format the `frontend/src/` directory using oxfmt.
 - `npm run build` build the the frontend and result in `frontend/dist` directory.
+
+## Best Practices
+
+- Implement testing

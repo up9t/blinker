@@ -9,7 +9,6 @@ import (
 const (
 	cameraTickInterval    = time.Second
 	cameraFlushInterval   = 30 * time.Second
-	cameraBlinkTimeout    = 1200 * time.Millisecond
 	cameraEventBufferSize = 16
 )
 
@@ -27,7 +26,7 @@ type CameraService struct {
 	blinkTimer *time.Timer
 
 	tick    time.Duration
-	timeout time.Duration
+	timeout func() time.Duration
 	flush   time.Duration
 
 	done     chan struct{}
@@ -35,14 +34,16 @@ type CameraService struct {
 	wg       sync.WaitGroup
 }
 
-func NewCameraService(repo CameraRepository) *CameraService {
+// timeout is read on every blink timer reset, so a changed setting applies without
+// restarting the camera
+func NewCameraService(repo CameraRepository, timeout func() time.Duration) *CameraService {
 	return &CameraService{
 		repo:       repo,
 		eventCh:    make(chan CameraEvent, cameraEventBufferSize),
 		hourMillis: make(map[int64]int64),
 		hourBlinks: make(map[int64]int64),
 		tick:       cameraTickInterval,
-		timeout:    cameraBlinkTimeout,
+		timeout:    timeout,
 		flush:      cameraFlushInterval,
 		done:       make(chan struct{}),
 	}
@@ -219,7 +220,7 @@ func (svc *CameraService) resetBlinkTimer() {
 		svc.blinkTimer.Stop()
 	}
 
-	svc.blinkTimer = time.AfterFunc(svc.timeout, func() {
+	svc.blinkTimer = time.AfterFunc(svc.timeout(), func() {
 		svc.mu.Lock()
 		present := svc.present
 		svc.mu.Unlock()

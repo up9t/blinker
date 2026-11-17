@@ -38,6 +38,7 @@ let nextFrameId: number;
 let now: number;
 let events: { blinks: number; detected: number; lost: number };
 let drawnFrames: number;
+let thresholds: { open: number; close: number };
 
 function tick(ms = 16) {
   now += ms;
@@ -62,6 +63,7 @@ beforeEach(() => {
   now = 0;
   events = { blinks: 0, detected: 0, lost: 0 };
   drawnFrames = 0;
+  thresholds = { open: 0.5, close: 0.525 };
 
   video = {
     readyState: 2,
@@ -113,8 +115,7 @@ beforeEach(() => {
     video as unknown as HTMLVideoElement,
     canvas as unknown as HTMLCanvasElement,
     {
-      eyeCloseThreshold: 0.525,
-      eyeOpenThreshold: 0.5,
+      getThresholds: () => thresholds,
       onBlink: () => events.blinks++,
       onFaceDetected: () => events.detected++,
       onFaceLost: () => events.lost++,
@@ -198,6 +199,19 @@ describe("CameraDetector", () => {
     tick();
 
     expect(events.blinks).toBe(1);
+  });
+
+  it("reads the thresholds on every frame", async () => {
+    await detector.start("camera-id");
+
+    tick();
+    expect(mockedGetCameraResult).toHaveBeenLastCalledWith(video, expect.any(Number), thresholds);
+
+    thresholds = { open: 0.2, close: 0.8 };
+    // nobody on screen, so the next check waits for the efficiency interval
+    tick(1000);
+
+    expect(mockedGetCameraResult).toHaveBeenLastCalledWith(video, expect.any(Number), thresholds);
   });
 
   it("reports face found once and face lost after 3s without a face", async () => {

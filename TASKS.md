@@ -6,14 +6,14 @@
   - [x] Screen time (face detect -> send event -> timer run on backend, face undetect -> send event -> timer stop), store data to sqlite, with buffered/timeout/aggregated/debounce.
   - [x] Blink Count
   - [x] Enter efficiency mode when the user isn't on screen for a few seconds, simple timeout to detect if the user is back on screen.
-  - [] Simple camera indicator (badge or something) (active/paused)
-  - [] Tweak/Config/Settings for the blink parameter such as eye close/open threshold and timeout for blink. This one needs to persist/store the data to the backend, and automatically hydrate/load/sync the settings when relaunch/mount/reload the app.
+  - [x] Simple camera indicator (badge or something) (active/paused)
+  - [x] Tweak/Config/Settings for the blink parameter such as eye close/open threshold and timeout for blink. This one needs to persist/store the data to the backend, and automatically hydrate/load/sync the settings when relaunch/mount/reload the app.
   <!-- detection keeps running while "hidden": the window is moved off screen (x11) or shrunk to 1x1 frameless (wayland), since a hidden/minimised window stops rAF -->
 - [] Breakpoint
   - Multiple Breakpoints
-  - Postpone feature (button)
+  - Postpone feature (button on the overlay window)
   - Queue break instead of replace if overlap
-  - Customize break UI, through Overlay Editor
+  - Customize break UI, through Overlay Editor (see below)
 - [] Overlay Editor
   - Show/preview using the base layout + the customized user content as the child component
   - Select file from assets manager (dropdown options + open in editor button)

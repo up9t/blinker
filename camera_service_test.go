@@ -64,10 +64,9 @@ func (repo *fakeCameraRepository) totals() (millis int64, blinks int64) {
 
 // short tick, explicit flushing only, blink reminder effectively disabled
 func newTestCameraService(repo CameraRepository) *CameraService {
-	svc := NewCameraService(repo)
+	svc := NewCameraService(repo, func() time.Duration { return time.Hour })
 	svc.tick = 10 * time.Millisecond
 	svc.flush = time.Hour
-	svc.timeout = time.Hour
 
 	return svc
 }
@@ -161,10 +160,9 @@ func TestCameraServiceFailedFlushKeepsBuffer(t *testing.T) {
 func TestCameraServiceBlinkReminder(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeCameraRepository()
-	svc := NewCameraService(repo)
+	svc := NewCameraService(repo, func() time.Duration { return 20 * time.Millisecond })
 	svc.tick = time.Hour
 	svc.flush = time.Hour
-	svc.timeout = 20 * time.Millisecond
 
 	events := svc.Start()
 	defer svc.Stop()
@@ -196,10 +194,9 @@ func TestCameraServiceBlinkReminder(t *testing.T) {
 
 func TestCameraServiceNoReminderWhenAbsent(t *testing.T) {
 	repo := newFakeCameraRepository()
-	svc := NewCameraService(repo)
+	svc := NewCameraService(repo, func() time.Duration { return 20 * time.Millisecond })
 	svc.tick = time.Hour
 	svc.flush = time.Hour
-	svc.timeout = 20 * time.Millisecond
 
 	events := svc.Start()
 	defer svc.Stop()
@@ -208,6 +205,47 @@ func TestCameraServiceNoReminderWhenAbsent(t *testing.T) {
 	case ev := <-events:
 		t.Fatalf("unexpected event while nobody is on screen: %d", ev.typ)
 	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestCameraServiceReadsTimeoutOnEveryReset(t *testing.T) {
+	repo := newFakeCameraRepository()
+	timeout := time.Hour
+	svc := NewCameraService(repo, func() time.Duration { return timeout })
+	svc.tick = time.Hour
+	svc.flush = time.Hour
+
+	events := svc.Start()
+	defer svc.Stop()
+
+	svc.FaceDetected()
+
+	select {
+	case ev := <-events:
+		t.Fatalf("expected no reminder with an hour long timeout, got %d", ev.typ)
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	// a saved setting must reach the running camera, no restart
+	timeout = 20 * time.Millisecond
+	svc.Blink()
+
+	select {
+	case ev := <-events:
+		if ev.typ != CameraEventBlinkDismiss {
+			t.Fatalf("expected the blink dismiss, got %d", ev.typ)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("blink did not dismiss the overlay")
+	}
+
+	select {
+	case ev := <-events:
+		if ev.typ != CameraEventBlinkReminder {
+			t.Fatalf("expected a reminder with the new timeout, got %d", ev.typ)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("the timer kept the old timeout")
 	}
 }
 

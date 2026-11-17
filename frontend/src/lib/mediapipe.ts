@@ -97,7 +97,7 @@ interface CameraResult {
   faceLandmarkResult: FaceLandmarkerResult | null;
 }
 
-interface EyeThreshold {
+export interface EyeThreshold {
   open: number;
   close: number;
 }

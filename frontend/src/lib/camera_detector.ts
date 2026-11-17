@@ -1,6 +1,6 @@
 import type { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 import { getCamera, stopCameraStream } from "./camera.ts";
-import { getCameraResult, setupLandmarker } from "./mediapipe.ts";
+import { getCameraResult, setupLandmarker, type EyeThreshold } from "./mediapipe.ts";
 import { clearCanvas, resizeCanvas } from "./canvas.ts";
 
 // face gone for this long counts as "user left the screen"
@@ -9,8 +9,8 @@ const FACE_LOST_DELAY_MS = 3000;
 const EFFICIENCY_INTERVAL_MS = 1000;
 
 export interface CameraDetectorOptions {
-  eyeOpenThreshold: number;
-  eyeCloseThreshold: number;
+  // read on every frame, so a changed setting applies to the running camera
+  getThresholds(): EyeThreshold;
   onBlink(): void;
   onFaceDetected(): void;
   onFaceLost(): void;
@@ -32,7 +32,7 @@ export class CameraDetector {
     private video: HTMLVideoElement,
     private canvas: HTMLCanvasElement,
     private options: CameraDetectorOptions,
-  ) { }
+  ) {}
 
   async start(deviceId: string): Promise<void> {
     this.stop();
@@ -110,10 +110,7 @@ export class CameraDetector {
     this.lastVideoTime = video.currentTime;
     this.lastCheckAt = now;
 
-    const result = getCameraResult(video, now, {
-      open: this.options.eyeOpenThreshold,
-      close: this.options.eyeCloseThreshold,
-    });
+    const result = getCameraResult(video, now, this.options.getThresholds());
 
     if (result.faceFound) {
       if (!this.facePresent) {

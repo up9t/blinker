@@ -43,6 +43,13 @@ All timers live in the backend (`camera_service.go`), together with the buffered
 and blink count written to sqlite every 30s. While nobody is on screen the frontend only runs
 the detector once per second (efficiency mode).
 
+The blink parameters (eye open/close thresholds, blink timeout) are user settings owned by
+`BlinkSettingsService` (`blink_settings_service.go`): one row in sqlite, loaded on startup so the
+camera timers use them before the frontend mounts, edited on the Camera page through
+`BlinkSettingsPanel` and saved with a debounce. The camera service reads the timeout on every
+timer reset, the detector reads the thresholds on every frame, so a change applies without a
+restart. General app settings (editor path, ...) are a separate concern, not these.
+
 
 ## Break Strategy
 
