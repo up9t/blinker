@@ -75,6 +75,9 @@ A breakpoint is a row in its own `breakpoints` table (own domain, never mixed wi
    after the delay the frontend sends. The delay is a frontend constant
    (`POSTPONE_DELAY_MS`, 30s today) and the backend only validates it. A break already in the
    queue starts right away.
+7. The tray menu has "Reset next break", which restarts only the breakpoint whose break comes
+   next (a break already queued behind a running one counts as next). The running break and
+   every other timer keep their deadlines.
 
 The timers share the camera timers' pattern (one mutex, a generation counter per breakpoint so
 a stale timer can't fire, and no event channel close while callbacks may still run). Every

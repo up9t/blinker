@@ -58,6 +58,16 @@ export function Remove(id: string): $CancellablePromise<void> {
 }
 
 /**
+ * ResetNextBreak restarts only the breakpoint whose break comes next, so that break is a
+ * full interval away. While a break runs, the next break is the first one in the queue; a
+ * queued break is taken out of the queue and gets its interval restarted instead. Every
+ * other timer keeps its deadline.
+ */
+export function ResetNextBreak(): $CancellablePromise<void> {
+    return $Call.ByID(1813347883);
+}
+
+/**
  * Start loads the stored breakpoints and arms a timer for each enabled one, so breaks keep
  * running before the frontend mounts. Rows the user can no longer use are skipped.
  */

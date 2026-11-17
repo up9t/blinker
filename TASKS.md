@@ -32,9 +32,9 @@
     Total: Today, this week, this month
 - [] Settings (Global settings)
   - Editor path and argument
-- [] Tray
-  - Active as system tray when hide.
-  - Reset next break
+- [x] Tray
+  - [x] Active as system tray when hide.
+  - [x] Reset next break
 - [] Assets Manager
   - Allow user upload custom assets such as audio for custom notif sound, html layout for breakpoints ui
 - [] Testing

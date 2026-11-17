@@ -532,6 +532,121 @@ func TestBreakpointServicePostponeValidatesTheDelay(t *testing.T) {
 	}
 }
 
+func TestBreakpointServiceResetNextBreak(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeBreakpointRepository()
+	svc := newTestBreakpointService(repo)
+	events := startTestBreakpointService(t, svc)
+
+	// one minute scaled to 60ms
+	bp := newTestBreakpoint("Break", 1, 1)
+	bp.IntervalUnit = DurationUnitMinute
+
+	if _, err := svc.Add(ctx, bp); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(40 * time.Millisecond)
+	svc.ResetNextBreak()
+
+	// the original 60ms deadline passed without a break
+	expectNoBreakpointEvent(t, events, 30*time.Millisecond)
+	waitBreakpointEvent(t, events, BreakpointEventStartBreak)
+}
+
+func TestBreakpointServiceResetNextBreakOnlyResetsTheSoonest(t *testing.T) {
+	repo := newFakeBreakpointRepository()
+
+	soon := newTestBreakpoint("Soon", 1, 1)
+	soon.IntervalUnit = DurationUnitMinute // 60ms
+	later := newTestBreakpoint("Later", 2, 1)
+	later.IntervalUnit = DurationUnitMinute // 120ms
+
+	seededSoon := repo.seed(t, soon)
+	seededLater := repo.seed(t, later)
+
+	svc := newTestBreakpointService(repo)
+	startTestBreakpointService(t, svc)
+
+	svc.mu.Lock()
+	beforeSoon := svc.intervalDeadlines[seededSoon.ID]
+	beforeLater := svc.intervalDeadlines[seededLater.ID]
+	svc.mu.Unlock()
+
+	time.Sleep(20 * time.Millisecond)
+	svc.ResetNextBreak()
+
+	svc.mu.Lock()
+	afterSoon := svc.intervalDeadlines[seededSoon.ID]
+	afterLater := svc.intervalDeadlines[seededLater.ID]
+	svc.mu.Unlock()
+
+	if !afterSoon.After(beforeSoon) {
+		t.Fatalf("the soonest timer was not reset: %s -> %s", beforeSoon, afterSoon)
+	}
+
+	if !afterLater.Equal(beforeLater) {
+		t.Fatalf("another breakpoint's timer was reset: %s -> %s", beforeLater, afterLater)
+	}
+}
+
+func TestBreakpointServiceResetNextBreakResetsTheQueuedBreak(t *testing.T) {
+	repo := newFakeBreakpointRepository()
+
+	long := newTestBreakpoint("Long", 1, 200)
+	queued := newTestBreakpoint("Queued", 1, 1)
+	queued.IntervalUnit = DurationUnitMinute // 60ms
+
+	seededQueued := repo.seed(t, queued)
+	repo.seed(t, long)
+
+	svc := newTestBreakpointService(repo)
+	events := startTestBreakpointService(t, svc)
+
+	first := waitBreakpointEvent(t, events, BreakpointEventStartBreak)
+
+	if first.data.Name != "Long" {
+		t.Fatalf("expected the 1ms interval to start first, got %q", first.data.Name)
+	}
+
+	// the minute long (60ms) interval comes due while the long break is still running
+	time.Sleep(80 * time.Millisecond)
+
+	svc.mu.Lock()
+	queuedBefore := len(svc.queue)
+	breakEndBefore := svc.breakEnd
+	svc.mu.Unlock()
+
+	if queuedBefore != 1 {
+		t.Fatalf("expected one queued break, got %d", queuedBefore)
+	}
+
+	svc.ResetNextBreak()
+
+	svc.mu.Lock()
+	queuedAfter := len(svc.queue)
+	deadline, armed := svc.intervalDeadlines[seededQueued.ID]
+	breakEndAfter := svc.breakEnd
+	svc.mu.Unlock()
+
+	// the running break keeps its own duration
+	if !breakEndAfter.Equal(breakEndBefore) {
+		t.Fatalf("the running break's duration changed: %s -> %s", breakEndBefore, breakEndAfter)
+	}
+
+	if queuedAfter != 0 {
+		t.Fatalf("expected the reset break to leave the queue, got %d", queuedAfter)
+	}
+
+	if !armed {
+		t.Fatal("expected the queued breakpoint to get a fresh interval timer")
+	}
+
+	if until := time.Until(deadline); until < 40*time.Millisecond {
+		t.Fatalf("expected a full interval, got %s", until)
+	}
+}
+
 func TestBreakpointServiceActiveBreak(t *testing.T) {
 	repo := newFakeBreakpointRepository()
 	repo.seed(t, newTestBreakpoint("Break", 1, 50))

@@ -249,6 +249,9 @@ func main() {
 	menu.Add("Show").OnClick(func(ctx *application.Context) {
 		showMainWindow()
 	})
+	menu.Add("Reset next break").OnClick(func(ctx *application.Context) {
+		breakpointService.ResetNextBreak()
+	})
 	menu.Add("Quit").OnClick(func(ctx *application.Context) {
 		app.Quit()
 	})

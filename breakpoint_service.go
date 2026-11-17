@@ -24,6 +24,8 @@ type BreakpointService struct {
 	breakpoints map[string]Breakpoint
 	// id -> unexpired interval timer
 	intervalTimers map[string]*time.Timer
+	// id -> when that timer fires, so "reset next break" finds the soonest one
+	intervalDeadlines map[string]time.Time
 	// bumped on every reschedule, so a timer that already fired can't act twice
 	generations map[string]int
 	// breaks waiting for the running break to finish
@@ -42,13 +44,14 @@ type BreakpointService struct {
 
 func NewBreakpointService(repo BreakpointRepository) *BreakpointService {
 	return &BreakpointService{
-		repo:           repo,
-		eventCh:        make(chan BreakpointEvent, breakpointEventBufferSize),
-		breakpoints:    make(map[string]Breakpoint),
-		intervalTimers: make(map[string]*time.Timer),
-		generations:    make(map[string]int),
-		speedup:        1,
-		done:           make(chan struct{}),
+		repo:              repo,
+		eventCh:           make(chan BreakpointEvent, breakpointEventBufferSize),
+		breakpoints:       make(map[string]Breakpoint),
+		intervalTimers:    make(map[string]*time.Timer),
+		intervalDeadlines: make(map[string]time.Time),
+		generations:       make(map[string]int),
+		speedup:           1,
+		done:              make(chan struct{}),
 	}
 }
 
@@ -108,6 +111,7 @@ func (svc *BreakpointService) stopIntervalLocked(id string) {
 		delete(svc.intervalTimers, id)
 	}
 
+	delete(svc.intervalDeadlines, id)
 	svc.generations[id]++
 }
 
@@ -119,10 +123,12 @@ func (svc *BreakpointService) scheduleIntervalLocked(bp Breakpoint, delay time.D
 
 	svc.stopIntervalLocked(bp.ID)
 	generation := svc.generations[bp.ID]
+	scaled := svc.scale(delay)
 
-	svc.intervalTimers[bp.ID] = time.AfterFunc(svc.scale(delay), func() {
+	svc.intervalTimers[bp.ID] = time.AfterFunc(scaled, func() {
 		svc.intervalElapsed(bp.ID, generation)
 	})
+	svc.intervalDeadlines[bp.ID] = time.Now().Add(scaled)
 }
 
 // caller must hold svc.mu
@@ -159,6 +165,7 @@ func (svc *BreakpointService) intervalElapsed(id string, generation int) {
 
 	// the timer just fired, it isn't reusable
 	delete(svc.intervalTimers, id)
+	delete(svc.intervalDeadlines, id)
 
 	bp, ok := svc.breakpoints[id]
 
@@ -314,6 +321,43 @@ func (svc *BreakpointService) Postpone(delayMs int) error {
 	svc.startQueuedBreakLocked()
 
 	return nil
+}
+
+// ResetNextBreak restarts only the breakpoint whose break comes next, so that break is a
+// full interval away. While a break runs, the next break is the first one in the queue; a
+// queued break is taken out of the queue and gets its interval restarted instead. Every
+// other timer keeps its deadline.
+func (svc *BreakpointService) ResetNextBreak() {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	if svc.stopped {
+		return
+	}
+
+	var nextID string
+
+	if svc.active != nil && len(svc.queue) > 0 {
+		nextID = svc.queue[0].ID
+		svc.queue = svc.queue[1:]
+	} else {
+		var nextDeadline time.Time
+
+		for id, deadline := range svc.intervalDeadlines {
+			if nextID == "" || deadline.Before(nextDeadline) {
+				nextID = id
+				nextDeadline = deadline
+			}
+		}
+	}
+
+	bp, ok := svc.breakpoints[nextID]
+
+	if !ok || !bp.Enabled || bp.validate() != nil {
+		return
+	}
+
+	svc.scheduleIntervalLocked(bp, bp.getInterval())
 }
 
 func (svc *BreakpointService) Add(ctx context.Context, bp Breakpoint) (Breakpoint, error) {
