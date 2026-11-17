@@ -6,25 +6,40 @@ import {
 } from "@mediapipe/tasks-vision";
 
 let landmarker: FaceLandmarker | undefined;
+// the canvas the task renders into, its WebGL context is needed for drawing
+let landmarkerCanvas: HTMLCanvasElement | undefined;
 
-export async function setupLandmarker(canvas: HTMLCanvasElement) {
+export async function setupLandmarker() {
   if (typeof landmarker !== "undefined") return landmarker;
 
   const modelAssetPath = import.meta.env.BASE_URL + "task-vision/face_landmarker.task";
   const modelPath = import.meta.env.BASE_URL + "task-vision/wasm";
 
   const resolver = await FilesetResolver.forVisionTasks(modelPath);
+  // MediaPipe creates a WebGL context on this canvas, so nobody else may touch it.
+  const canvas = document.createElement("canvas");
 
-  landmarker = await FaceLandmarker.createFromOptions(resolver, {
-    baseOptions: {
-      delegate: "GPU",
-      modelAssetPath: modelAssetPath,
-    },
-    runningMode: "VIDEO",
-    outputFaceBlendshapes: true,
-    numFaces: 1,
-    canvas: canvas,
-  });
+  const create = (delegate: "GPU" | "CPU") =>
+    FaceLandmarker.createFromOptions(resolver, {
+      baseOptions: {
+        delegate: delegate,
+        modelAssetPath: modelAssetPath,
+      },
+      runningMode: "VIDEO",
+      outputFaceBlendshapes: true,
+      numFaces: 1,
+      canvas: canvas,
+    });
+
+  try {
+    landmarker = await create("GPU");
+  } catch (err) {
+    // no usable WebGL on this machine, CPU is slower but keeps the feature working
+    console.warn("GPU delegate failed, falling back to CPU", err);
+    landmarker = await create("CPU");
+  }
+
+  landmarkerCanvas = canvas;
 
   return landmarker;
 }
@@ -33,13 +48,15 @@ export interface IDrawLandmark {
   (results: FaceLandmarkerResult): void;
 }
 
-export function setupDrawLandmark(
-  context: CanvasRenderingContext2D,
-  gpuContext: WebGL2RenderingContext,
-): IDrawLandmark {
-  const drawingUtils = new DrawingUtils(context, gpuContext);
+export function setupDrawLandmark(context: CanvasRenderingContext2D): IDrawLandmark {
+  let drawingUtils: DrawingUtils | undefined;
 
   return function (results: FaceLandmarkerResult) {
+    // built once, on the first frame, because the task canvas only exists after setupLandmarker()
+    if (!drawingUtils) {
+      drawingUtils = new DrawingUtils(context, landmarkerCanvas?.getContext("webgl2") ?? undefined);
+    }
+
     for (const landmarks of results.faceLandmarks) {
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, {
         color: "#C0C0C070",
@@ -75,7 +92,8 @@ export function setupDrawLandmark(
 
 interface CameraResult {
   faceFound: boolean;
-  eyeClose: boolean;
+  // null when the blink score sits between the open and close thresholds
+  eyesClosed: boolean | null;
   faceLandmarkResult: FaceLandmarkerResult | null;
 }
 
@@ -89,44 +107,43 @@ export function getCameraResult(
   now: number,
   { open, close }: EyeThreshold,
 ): CameraResult {
-  if (typeof landmarker === "undefined")
+  if (typeof landmarker === "undefined") {
     return {
       faceFound: false,
-      eyeClose: false,
+      eyesClosed: null,
       faceLandmarkResult: null,
     };
+  }
 
   const results = landmarker.detectForVideo(videoElement, now);
 
-  if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
-    const blinkEyes = results.faceBlendshapes
-      .at(0)
-      ?.categories.filter(
-        (cat) => cat.categoryName === "eyeBlinkLeft" || cat.categoryName === "eyeBlinkRight",
-      );
+  if (!results.faceLandmarks || results.faceLandmarks.length === 0) {
+    return {
+      faceFound: false,
+      eyesClosed: null,
+      faceLandmarkResult: null,
+    };
+  }
 
-    // is eye's closing
-    if (blinkEyes?.every((blinkEye) => blinkEye.score >= close)) {
-      return {
-        faceFound: true,
-        eyeClose: true,
-        faceLandmarkResult: results,
-      };
-    }
+  const blinkEyes = results.faceBlendshapes
+    .at(0)
+    ?.categories.filter(
+      (cat) => cat.categoryName === "eyeBlinkLeft" || cat.categoryName === "eyeBlinkRight",
+    );
 
-    // is eye's opening
-    if (blinkEyes?.every((blinkEye) => blinkEye.score <= open)) {
-      return {
-        faceFound: true,
-        eyeClose: false,
-        faceLandmarkResult: results,
-      };
+  let eyesClosed: boolean | null = null;
+
+  if (blinkEyes?.length === 2) {
+    if (blinkEyes.every((blinkEye) => blinkEye.score >= close)) {
+      eyesClosed = true;
+    } else if (blinkEyes.every((blinkEye) => blinkEye.score <= open)) {
+      eyesClosed = false;
     }
   }
 
   return {
-    faceFound: false,
-    eyeClose: false,
+    faceFound: true,
+    eyesClosed,
     faceLandmarkResult: results,
   };
 }

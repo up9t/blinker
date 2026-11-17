@@ -31,6 +31,21 @@ const (
 	BreakEventFinish = "break:finish"
 )
 
+const (
+	overlayModeNone = iota
+	overlayModeBlink
+	overlayModeBreak
+)
+
+// far enough away that no monitor can show it
+const offscreenPosition = -10000
+
+// keep the window mapped but tiny, Wayland ignores requested positions
+const (
+	hiddenWidth  = 1
+	hiddenHeight = 1
+)
+
 func init() {
 	// Register a custom event whose associated data type is string.
 	// This is not required, but the binding generator will pick up registered events
@@ -72,6 +87,13 @@ func main() {
 		return
 	}
 
+	cameraRepo := NewCameraSqliteRepository(db)
+
+	if err := cameraRepo.Migrate(ctx); err != nil {
+		logger.Error("Failed to migrate camera tables", "err", err)
+		return
+	}
+
 	breakpointService := NewBreakpointService(breakpointRepo)
 	bpEvent, err := breakpointService.Start(ctx)
 
@@ -81,6 +103,11 @@ func main() {
 	}
 
 	defer breakpointService.Stop()
+
+	cameraService := NewCameraService(cameraRepo)
+	cameraEvent := cameraService.Start()
+
+	defer cameraService.Stop()
 
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
@@ -92,6 +119,7 @@ func main() {
 		Description: "Helps lubricate eyes by forcing user to blink.",
 		Services: []application.Service{
 			application.NewService(breakpointService),
+			application.NewService(cameraService),
 			application.NewService(notifier),
 		},
 		Assets: application.AssetOptions{
@@ -139,29 +167,76 @@ func main() {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 		BackgroundColour: application.NewRGB(6, 7, 15),
-		URL:              "/overlay",
+		URL:              "/overlay/",
 		Hidden:           true,
 	})
 
 	mainWindow.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		app.Quit()
 	})
+
+	// A hidden or minimised window stops the webview rendering, which stops the camera
+	// loop. So "hiding" keeps the window mapped and makes it as invisible as the platform
+	// allows: off screen (X11) and 1x1 (Wayland, which ignores requested positions).
+	var savedX, savedY, savedWidth, savedHeight int
+	hidden := false
+
+	hideMainWindow := func() {
+		if hidden {
+			return
+		}
+
+		savedX, savedY = mainWindow.Position()
+		savedWidth, savedHeight = mainWindow.Size()
+		hidden = true
+
+		// a tiny window still shows its decorations, so drop the frame while hidden
+		// GTK4 ignores the default size on a mapped resizable window, a non-resizable
+		// one has to follow it
+		mainWindow.SetResizable(false)
+		mainWindow.SetSize(hiddenWidth, hiddenHeight)
+		mainWindow.SetFrameless(true)
+		mainWindow.SetPosition(offscreenPosition, offscreenPosition)
+	}
+
+	showMainWindow := func() {
+		if hidden {
+			// resize while still non-resizable, then make it resizable again
+			mainWindow.SetSize(savedWidth, savedHeight)
+			mainWindow.SetResizable(true)
+			mainWindow.SetFrameless(false)
+			mainWindow.SetPosition(savedX, savedY)
+			hidden = false
+		}
+
+		mainWindow.Show()
+		mainWindow.Focus()
+	}
+
 	mainWindow.OnWindowEvent(events.Common.WindowMinimise, func(event *application.WindowEvent) {
-		mainWindow.Hide()
+		mainWindow.UnMinimise()
+		hideMainWindow()
 	})
 
 	// Create system tray
 	systray := app.SystemTray.New()
 	// systray.SetIcon(icon)
 	systray.SetLabel(appName)
-	systray.AttachWindow(mainWindow)
+	// AttachWindow's default toggle calls Hide(), which stops the webview rendering,
+	// so the click has to go through the off screen hide/show instead.
+	systray.OnClick(func() {
+		if hidden {
+			showMainWindow()
+			return
+		}
+
+		hideMainWindow()
+	})
 
 	// Add menu
 	menu := app.NewMenu()
 	menu.Add("Show").OnClick(func(ctx *application.Context) {
-		// Show main window
-		mainWindow.Show()
-		mainWindow.Focus()
+		showMainWindow()
 	})
 	menu.Add("Quit").OnClick(func(ctx *application.Context) {
 		app.Quit()
@@ -188,23 +263,51 @@ func main() {
 		}
 	})
 
-	go func() {
-		for ev := range bpEvent {
-			if ctx.Err() != nil {
-				return
-			}
+	overlayMode := overlayModeNone
 
-			bp := ev.data
-			switch ev.typ {
-			case BreakpointEventStartBreak:
-				app.Event.Emit(BreakEventStart, bp)
-				// overlayWindow.SetHTML()
-				overlayWindow.SetURL("/break")
-				overlayWindow.Show()
-			case BreakpointEventFinishBreak:
-				overlayWindow.SetURL("/overlay")
-				overlayWindow.Hide()
-				app.Event.Emit(BreakEventFinish, bp)
+	go func() {
+		for {
+			select {
+			case ev, ok := <-bpEvent:
+				if !ok {
+					bpEvent = nil
+					continue
+				}
+
+				bp := ev.data
+				switch ev.typ {
+				case BreakpointEventStartBreak:
+					overlayMode = overlayModeBreak
+					app.Event.Emit(BreakEventStart, bp)
+					// overlayWindow.SetHTML()
+					overlayWindow.SetURL("/break/")
+					overlayWindow.Show()
+				case BreakpointEventFinishBreak:
+					if overlayMode == overlayModeBreak {
+						overlayMode = overlayModeNone
+						overlayWindow.Hide()
+					}
+					app.Event.Emit(BreakEventFinish, bp)
+				}
+			case ev := <-cameraEvent:
+				switch ev.typ {
+				case CameraEventBlinkReminder:
+					// a break is more important than a blink reminder
+					if overlayMode != overlayModeNone {
+						continue
+					}
+
+					overlayMode = overlayModeBlink
+					overlayWindow.SetURL("/overlay/")
+					overlayWindow.Show()
+				case CameraEventBlinkDismiss:
+					if overlayMode != overlayModeBlink {
+						continue
+					}
+
+					overlayMode = overlayModeNone
+					overlayWindow.Hide()
+				}
 			}
 		}
 	}()

@@ -19,7 +19,7 @@ func NewBreakpointSqliteRepository(table string, db *sql.DB) *BreakpointSqliteRe
 }
 
 func (repo *BreakpointSqliteRepository) Migrate(ctx context.Context) error {
-	_, err := repo.db.ExecContext(ctx, fmt.Sprintf(`CREATE TABLE %s (
+	_, err := repo.db.ExecContext(ctx, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
 		interval INTEGER,
@@ -57,15 +57,22 @@ func (repo *BreakpointSqliteRepository) Create(ctx context.Context, bp Breakpoin
 }
 
 func (repo *BreakpointSqliteRepository) GetByID(ctx context.Context, id string) (Breakpoint, error) {
-	bp := Breakpoint{}
-	err := repo.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT (
+	bp := Breakpoint{id: id}
+	err := repo.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT
 		name,
 		interval, 
 		interval_unit, 
 		duration, 
 		duration_unit, 
 		enabled
-	) FROM %s WHERE id = ?`, repo.table), id).Scan(&bp)
+	FROM %s WHERE id = ?`, repo.table), id).Scan(
+		&bp.name,
+		&bp.interval,
+		&bp.intervalUnit,
+		&bp.duration,
+		&bp.durationUnit,
+		&bp.enabled,
+	)
 
 	if err != nil {
 		return Breakpoint{}, err
@@ -75,14 +82,15 @@ func (repo *BreakpointSqliteRepository) GetByID(ctx context.Context, id string) 
 }
 
 func (repo *BreakpointSqliteRepository) List(ctx context.Context) ([]Breakpoint, error) {
-	rows, err := repo.db.QueryContext(ctx, fmt.Sprintf(`SELECT (
+	rows, err := repo.db.QueryContext(ctx, fmt.Sprintf(`SELECT
+		id,
 		name,
 		interval, 
 		interval_unit, 
 		duration, 
 		duration_unit, 
 		enabled
-	) FROM %s`, repo.table))
+	FROM %s`, repo.table))
 
 	if err != nil {
 		return nil, err
@@ -98,7 +106,15 @@ func (repo *BreakpointSqliteRepository) List(ctx context.Context) ([]Breakpoint,
 		}
 
 		bp := Breakpoint{}
-		err := rows.Scan(&bp)
+		err := rows.Scan(
+			&bp.id,
+			&bp.name,
+			&bp.interval,
+			&bp.intervalUnit,
+			&bp.duration,
+			&bp.durationUnit,
+			&bp.enabled,
+		)
 
 		if err != nil {
 			return nil, err

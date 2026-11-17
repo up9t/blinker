@@ -1,10 +1,5 @@
 import { useEffect, useId, useState, type ChangeEvent } from "react";
-import {
-  getCamera,
-  listCameras,
-  requestCameraPermission,
-  stopCameraStream,
-} from "../lib/camera.ts";
+import { listCameras, requestCameraPermission } from "../lib/camera.ts";
 
 interface CameraSelectorProps {
   onDeviceChange(deviceId: string): void;
@@ -19,10 +14,13 @@ export function CameraSelector(props: CameraSelectorProps) {
     requestCameraPermission()
       .then(listCameras)
       .then((c) => {
-        setUsedCamera(c[0]?.deviceId);
-        return c;
+        setCameras(c);
+
+        if (c[0]) {
+          setUsedCamera(c[0].deviceId);
+          props.onDeviceChange(c[0].deviceId);
+        }
       })
-      .then(setCameras)
       .catch((err) => console.error("Error", err));
   }, []);
 
@@ -36,10 +34,12 @@ export function CameraSelector(props: CameraSelectorProps) {
   return (
     <>
       <label htmlFor={deviceSelectId}>Camera: </label>
-      <select name="" id={deviceSelectId} onChange={onDeviceChange} defaultValue={usedCamera}>
-        <option value="">haha</option>
+      <select id={deviceSelectId} onChange={onDeviceChange} value={usedCamera}>
+        <option value="">No camera</option>
         {cameras.map((c) => (
-          <option value={c.deviceId}>{c.label}</option>
+          <option key={c.deviceId} value={c.deviceId}>
+            {c.label}
+          </option>
         ))}
       </select>
     </>

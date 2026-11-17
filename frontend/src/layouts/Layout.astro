@@ -1,6 +1,13 @@
 ---
 import "@/styles/global.css";
 import Navbar from "../components/Navbar.astro";
+
+interface Props {
+	// the overlay windows are their own screen, no app chrome there
+	nav?: boolean;
+}
+
+const { nav = true } = Astro.props;
 ---
 
 <!doctype html>
@@ -14,7 +21,7 @@ import Navbar from "../components/Navbar.astro";
 		<title>Blinker</title>
 	</head>
 	<body>
-		<Navbar />
+		{nav && <Navbar />}
 		<slot />
 	</body>
 </html>
