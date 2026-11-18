@@ -235,6 +235,49 @@ func TestBreakpointServiceCyclesBreaks(t *testing.T) {
 	waitBreakpointEvent(t, events, BreakpointEventStartBreak)
 }
 
+func TestBreakpointServiceNotifiesBeforeTheBreak(t *testing.T) {
+	repo := newFakeBreakpointRepository()
+	// a 60s interval scaled to 60ms puts the reminder 40s (40ms) before the break
+	repo.seed(t, newTestBreakpoint("Focus", 60, 1))
+
+	svc := newTestBreakpointService(repo)
+
+	started := time.Now()
+	events := startTestBreakpointService(t, svc)
+
+	ev := waitBreakpointEvent(t, events, BreakpointEventBreakSoon)
+
+	if ev.data.Name != "Focus" || ev.data.RemainingMs != 40_000 {
+		t.Fatalf("unexpected reminder info: %+v", ev.data)
+	}
+
+	// the channel order already proves it came before the break; this rejects an
+	// immediate reminder at schedule time
+	if lead := time.Since(started); lead < 15*time.Millisecond {
+		t.Fatalf("the reminder came after %s, expected it to wait out the lead time", lead)
+	}
+
+	waitBreakpointEvent(t, events, BreakpointEventStartBreak)
+}
+
+func TestBreakpointServiceSkipsReminderForShortIntervals(t *testing.T) {
+	repo := newFakeBreakpointRepository()
+	// 39s is below the 40s lead time, so the break comes with no heads up
+	repo.seed(t, newTestBreakpoint("Short", 39, 1))
+
+	svc := newTestBreakpointService(repo)
+	events := startTestBreakpointService(t, svc)
+
+	select {
+	case ev := <-events:
+		if ev.typ != BreakpointEventStartBreak {
+			t.Fatalf("unexpected event %d before the break", ev.typ)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the break")
+	}
+}
+
 func TestBreakpointServiceSkipsDisabledStoredBreakpoints(t *testing.T) {
 	repo := newFakeBreakpointRepository()
 	disabled := newTestBreakpoint("Disabled", 1, 1)
@@ -538,19 +581,30 @@ func TestBreakpointServiceResetNextBreak(t *testing.T) {
 	svc := newTestBreakpointService(repo)
 	events := startTestBreakpointService(t, svc)
 
-	// one minute scaled to 60ms
-	bp := newTestBreakpoint("Break", 1, 1)
+	// two minutes scaled to 120ms, so its reminder comes at 80ms
+	bp := newTestBreakpoint("Break", 2, 1)
 	bp.IntervalUnit = DurationUnitMinute
 
 	if _, err := svc.Add(ctx, bp); err != nil {
 		t.Fatal(err)
 	}
 
-	time.Sleep(40 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+
+	// the original schedule sent its heads up before the reset
+	waitBreakpointEvent(t, events, BreakpointEventBreakSoon)
 	svc.ResetNextBreak()
 
-	// the original 60ms deadline passed without a break
-	expectNoBreakpointEvent(t, events, 30*time.Millisecond)
+	// the stale deadline would fire 20ms from now; the reset one reminds after 80ms
+	select {
+	case ev := <-events:
+		if ev.typ != BreakpointEventBreakSoon {
+			t.Fatalf("the old deadline fired after the reset: event %d", ev.typ)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the reset schedule")
+	}
+
 	waitBreakpointEvent(t, events, BreakpointEventStartBreak)
 }
 

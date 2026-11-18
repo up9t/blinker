@@ -16,6 +16,9 @@ const (
 
 	// fire a new interval cycle
 	BreakpointEventFinishBreak
+
+	// wake the user up before the break starts
+	BreakpointEventBreakSoon
 )
 
 type BreakpointEvent struct {
@@ -37,6 +40,9 @@ const (
 
 	breakpointMaxInterval = 24 * time.Hour
 	breakpointMaxDuration = time.Hour
+
+	// how long before a break the user gets a notification
+	breakpointNotifyLeadTime = 40 * time.Second
 )
 
 // json tags are what the binding generator uses for the frontend field names

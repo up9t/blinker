@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
 	"log/slog"
 	"os"
+	"uuid"
 
 	"log"
 
@@ -257,25 +259,29 @@ func main() {
 	})
 	systray.SetMenu(menu)
 
-	app.Event.On(NotificationEventSend, func(event *application.CustomEvent) {
-		data, ok := event.Data.(struct {
-			Title string `json:"title"`
-			Body  string `json:"body"`
-		})
-
-		if !ok {
-			logger.Error("failed to parse notification data", "data", data)
-			return
-		}
-
+	sendNotification := func(title, body string) {
 		if err := notifier.SendNotification(notifications.NotificationOptions{
-			ID:    "blinker_notification_id",
-			Title: data.Title,
-			Body:  data.Body,
+			ID:    uuid.New().String(),
+			Title: title,
+			Body:  body,
 		}); err != nil {
 			logger.Error("failed to send notification", "err", err)
 		}
-	})
+	}
+
+	// app.Event.On(NotificationEventSend, func(event *application.CustomEvent) {
+	// 	data, ok := event.Data.(struct {
+	// 		Title string `json:"title"`
+	// 		Body  string `json:"body"`
+	// 	})
+
+	// 	if !ok {
+	// 		logger.Error("failed to parse notification data", "data", data)
+	// 		return
+	// 	}
+
+	// 	sendNotification(data.Title, data.Body)
+	// })
 
 	overlayMode := overlayModeNone
 
@@ -284,6 +290,8 @@ func main() {
 			select {
 			case ev := <-bpEvent:
 				switch ev.typ {
+				case BreakpointEventBreakSoon:
+					sendNotification(appName, fmt.Sprintf("Break is coming! %ds (%s)", ev.data.RemainingMs/1000, ev.data.Name))
 				case BreakpointEventStartBreak:
 					// a break is more important than a blink reminder, it takes the overlay
 					overlayMode = overlayModeBreak

@@ -61,7 +61,9 @@ A breakpoint is a row in its own `breakpoints` table (own domain, never mixed wi
 `BreakpointService` (`breakpoint_service.go`) owns the whole schedule in the backend:
 
 1. `Start` loads the stored breakpoints before the windows open and arms one interval timer
-   per enabled breakpoint.
+   per enabled breakpoint. An interval of 40s or more also gets a reminder timer
+   (`breakpointNotifyLeadTime`) that emits `BreakpointEventBreakSoon` 40s earlier;
+   `main.go` turns it into a desktop notification titled with the app name.
 2. When an interval is due and no break is on screen, the service starts the break, emits
    `StartBreak`, and arms the duration timer.
 3. `main.go` shows the shared overlay window with `/break/` and passes the `BreakInfo`

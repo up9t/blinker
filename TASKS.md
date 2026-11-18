@@ -19,38 +19,38 @@
   - [x] Queue break duration if overlap instead of replace.
   - [x] Save settings data to the backend and automatically hydrate/sync on launch/relaunch/mount/reload the app. This settings is in its own boundary/domain, don't mess with other settings like blink_settings or general/global settings.
   - [x] Add test to the frontend.
-  - (later needs overlay editor) Asset selection dropdown to customize audio/sound and layout.
-  - (later needs overlay editor) Customize break UI, through Overlay Editor (see below)
-- [] Overlay/Break Editor
-  - Show/preview using the base layout + the customized user content as the child component
-  - Select file from assets manager (dropdown options + open in editor button)
-  - Live preview, when there is change in the file in the selected option, automatically mirror the change in the browser.
-- [] Statistics
-  - Stored on the backend using sqlite. Buffered/aggregated/debounce/timeout, before sending the count data to the backend.
-  - Blink count this day (per hour)
-    Graph: Today (hourly), This week (Per day), This month (Per day)
-    Total: Today, this week, this month
-- [] Settings (Global settings)
-  - Editor path and argument
+  - [x] Send Notification 40 seconds before break, if the break interval is >= 40 seconds. Store the number as a constant variable for now. With data of title=appname,body="Break is coming! 40s (name-of-the-break-here)"
+  - [ ] (later needs overlay editor) Asset selection dropdown to customize audio/sound and layout.
+  - [ ] (later needs overlay editor) Customize break UI, through Overlay Editor (see below)
+- [ ] Overlay/Break Editor (need Asset Manager)
+  - [ ] Show/preview using the base layout + the customized user content as the child component
+  - [ ] Select file from assets manager (dropdown options + open in editor button)
+  - [ ] Live preview, when there is change in the file in the selected option, automatically mirror the change in the browser.
+- [ ] Statistics
+  - [x] Stored on the backend using sqlite. Buffered/aggregated/debounce/timeout, before sending the count data to the backend.
+  - [ ] Total Blink Count: today, this week, this month
+  - [ ] Blink Count Graph: Today (hourly), This week (Per day), This month (Per day)
+- [ ] Settings (Global settings)
+  - [ ] Editor path and argument
 - [x] Tray
   - [x] Active as system tray when hide.
   - [x] Reset next break
-- [] Assets Manager
-  - Allow user upload custom assets such as audio for custom notif sound, html layout for breakpoints ui
-- [] Testing
+- [ ] Assets Manager
+  - [ ] Allow user upload custom assets such as audio for custom notif sound, html layout for breakpoints ui.
+- [ ] Testing
   - Write different kinds of tests. Ensuring quality of the code and performance.
-- [] CI/CD
+- [ ] CI/CD
   - Github action auto build/release.
-- [] Extension
+- [ ] Extension/Plugin
   - Idk how it worked
-- [] Logo (developer job, DO NOT INTERFERE!)
+- [ ] Logo (developer job, DO NOT INTERFERE!)
   - Update logo 
-- [] Web (developer job, DO NOT INTERFERE!)
+- [ ] Web (developer job, DO NOT INTERFERE!)
   - Make a website or landing page about this project 
-- [] Flatpak
+- [ ] Flatpak
   - Change flatpak name from org.blinker.Blinker to ... wait I haven't think of it yet. Ignore this one.
-- [] Docs
+- [ ] Docs
   - Update the showcase images
   - Update README.md
-- [] UI (developer job, DO NOT INTERFERE!)
+- [ ] UI (developer job, DO NOT INTERFERE!)
   - Design a beautiful UI (lowest priority right now, consider using Shadcn components).

@@ -24,6 +24,8 @@ type BreakpointService struct {
 	breakpoints map[string]Breakpoint
 	// id -> unexpired interval timer
 	intervalTimers map[string]*time.Timer
+	// id -> timer that notifies shortly before that interval timer fires
+	notifyTimers map[string]*time.Timer
 	// id -> when that timer fires, so "reset next break" finds the soonest one
 	intervalDeadlines map[string]time.Time
 	// bumped on every reschedule, so a timer that already fired can't act twice
@@ -48,6 +50,7 @@ func NewBreakpointService(repo BreakpointRepository) *BreakpointService {
 		eventCh:           make(chan BreakpointEvent, breakpointEventBufferSize),
 		breakpoints:       make(map[string]Breakpoint),
 		intervalTimers:    make(map[string]*time.Timer),
+		notifyTimers:      make(map[string]*time.Timer),
 		intervalDeadlines: make(map[string]time.Time),
 		generations:       make(map[string]int),
 		speedup:           1,
@@ -111,6 +114,11 @@ func (svc *BreakpointService) stopIntervalLocked(id string) {
 		delete(svc.intervalTimers, id)
 	}
 
+	if timer, ok := svc.notifyTimers[id]; ok {
+		timer.Stop()
+		delete(svc.notifyTimers, id)
+	}
+
 	delete(svc.intervalDeadlines, id)
 	svc.generations[id]++
 }
@@ -129,6 +137,41 @@ func (svc *BreakpointService) scheduleIntervalLocked(bp Breakpoint, delay time.D
 		svc.intervalElapsed(bp.ID, generation)
 	})
 	svc.intervalDeadlines[bp.ID] = time.Now().Add(scaled)
+
+	// a break shorter than the lead time leaves no room for a heads up
+	if delay >= breakpointNotifyLeadTime {
+		svc.notifyTimers[bp.ID] = time.AfterFunc(svc.scale(delay-breakpointNotifyLeadTime), func() {
+			svc.intervalReminder(bp.ID, generation)
+		})
+	}
+}
+
+// intervalReminder tells the user a break is coming. It shares the interval timer's
+// generation, so a reschedule or disable silently drops the stale reminder.
+func (svc *BreakpointService) intervalReminder(id string, generation int) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	if svc.stopped || svc.generations[id] != generation {
+		return
+	}
+
+	// the timer just fired, it isn't reusable
+	delete(svc.notifyTimers, id)
+
+	bp, ok := svc.breakpoints[id]
+
+	if !ok || !bp.Enabled {
+		return
+	}
+
+	svc.emitLocked(BreakpointEvent{
+		typ: BreakpointEventBreakSoon,
+		data: BreakInfo{
+			Name:        bp.Name,
+			RemainingMs: int(breakpointNotifyLeadTime / time.Millisecond),
+		},
+	})
 }
 
 // caller must hold svc.mu
