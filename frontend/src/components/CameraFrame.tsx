@@ -79,7 +79,7 @@ export function CameraFrame(props: CameraFrameProps) {
         ref={videoElementRef}
         autoPlay
         muted
-        className="absolute size-full object-cover inset-0"
+        className="absolute size-full object-cover inset-0 opacity-0"
       ></video>
       <canvas ref={canvasElementRef} className="absolute size-full object-cover inset-0"></canvas>
       <p className="absolute top-2 left-2 flex items-center gap-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
