@@ -13,6 +13,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "format": "oxfmt src/",
+    "lint": "oxlint src/",
     "test": "vitest run"
   },
   "dependencies": {
@@ -32,7 +33,8 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
-    "oxfmt": "^0.78.0",
+    "oxfmt": "^0.79.0",
+    "oxlint": "^1.94.0",
     "vitest": "^5.1.0"
   }
 }
