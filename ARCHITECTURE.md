@@ -90,3 +90,16 @@ The Breakpoints page (`BreakpointPanel`) hydrates from `List()` on mount and wri
 add, update, enable/disable and delete immediately. The break overlay (`BreakOverlay`) only
 reads `ActiveBreak()`, listens for `break:start` and calls `Postpone()`, so no break state
 lives in the frontend.
+
+## Statistics
+
+The camera data is read back through `CameraService.Statistics(ctx)` (`statistics.go`): it
+queries the current month (plus the days of this week that fall in the previous month) from
+the two hourly tables via `CameraRepository` (`ListBlinkCounts`, `ListScreenTime`), merges the
+buffer that has not been flushed yet (`hourBlinks`, `hourMillis`), and buckets both metrics
+into today (24 hours), this week (7 days, Monday first) and this month (one bucket per day,
+zero for days without data).
+Every total is the sum of its own buckets.
+
+`StatisticsPanel` (`statistics.astro`) reads it on mount and on Refresh and renders bare
+tables, so styling the graphs is a frontend job; the backend only owns the numbers.

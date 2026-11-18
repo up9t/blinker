@@ -60,3 +60,51 @@ func TestCameraSqliteRepositoryAccumulates(t *testing.T) {
 		t.Fatalf("expected 5 blinks, got %d", blinks)
 	}
 }
+
+func TestCameraSqliteRepositoryListHours(t *testing.T) {
+	ctx := context.Background()
+	db, err := NewSqliteDB(":memory:")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer db.Close()
+
+	repo := NewCameraSqliteRepository(db)
+
+	if err := repo.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	for hour, value := range map[int64]int64{100: 10, 200: 20, 300: 30} {
+		if err := repo.AddScreenTime(ctx, hour, value); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := repo.AddBlinkCount(ctx, hour, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	screen, err := repo.ListScreenTime(ctx, 200, 300)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blinks, err := repo.ListBlinkCounts(ctx, 100, 200)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fromHour included, toHour excluded
+	if len(screen) != 1 || screen[200] != 20 {
+		t.Fatalf("expected only the 200 hour of screen time, got %v", screen)
+	}
+
+	if len(blinks) != 1 || blinks[100] != 10 {
+		t.Fatalf("expected only the 100 hour of blinks, got %v", blinks)
+	}
+}

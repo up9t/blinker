@@ -26,10 +26,12 @@
   - [ ] Show/preview using the base layout + the customized user content as the child component
   - [ ] Select file from assets manager (dropdown options + open in editor button)
   - [ ] Live preview, when there is change in the file in the selected option, automatically mirror the change in the browser.
-- [ ] Statistics
+- [x] Statistics
   - [x] Stored on the backend using sqlite. Buffered/aggregated/debounce/timeout, before sending the count data to the backend.
-  - [ ] Total Blink Count: today, this week, this month
-  - [ ] Blink Count Graph: Today (hourly), This week (Per day), This month (Per day)
+  - [x] Statistics page (statistics.astro)
+  - [x] Show Total Blink Count: today, this week, this month
+  - [x] Show Blink Count Graph: Today (hourly), This week (Per day), This month (Per day)
+  - [x] Screen time this day, this week (per day), this month (per day).
 - [ ] Settings (Global settings)
   - [ ] Editor path and argument
 - [x] Tray

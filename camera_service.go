@@ -168,6 +168,50 @@ func (svc *CameraService) restoreBlinks(hour int64, blinks int64) {
 	svc.hourBlinks[hour] += blinks
 }
 
+// statisticsRange is the span of hourly rows the page needs: the week can start in the
+// previous month, so the month alone is not enough.
+func statisticsRange(now time.Time) (from int64, to int64) {
+	from = startOfWeek(now).Unix()
+
+	if month := startOfMonth(now).Unix(); month < from {
+		from = month
+	}
+
+	return from, startOfDay(now).AddDate(0, 0, 1).Unix()
+}
+
+// Statistics reads the hourly rows back and adds the buffer that hasn't been flushed yet, so
+// the page also shows the blinks and the screen time of the current minute.
+func (svc *CameraService) Statistics(ctx context.Context) (Statistics, error) {
+	now := time.Now()
+	from, to := statisticsRange(now)
+
+	// the lock spans the reads: a flush in between would move data out of the buffer after
+	// the read and the merge would miss it
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	blinks, err := svc.repo.ListBlinkCounts(ctx, from, to)
+
+	if err != nil {
+		return Statistics{}, err
+	}
+
+	screen, err := svc.repo.ListScreenTime(ctx, from, to)
+
+	if err != nil {
+		return Statistics{}, err
+	}
+
+	mergeHours(blinks, svc.hourBlinks, from, to)
+	mergeHours(screen, svc.hourMillis, from, to)
+
+	return Statistics{
+		Blinks:     buildStatistics(now, blinks),
+		ScreenTime: buildStatistics(now, screen),
+	}, nil
+}
+
 // FaceDetected starts the screen time and blink timers. Repeated calls are no-ops.
 func (svc *CameraService) FaceDetected() {
 	svc.mu.Lock()

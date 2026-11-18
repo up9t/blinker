@@ -47,6 +47,33 @@ func (repo *fakeCameraRepository) AddBlinkCount(ctx context.Context, hour int64,
 	return nil
 }
 
+func (repo *fakeCameraRepository) ListScreenTime(ctx context.Context, fromHour int64, toHour int64) (map[int64]int64, error) {
+	return repo.list(repo.screen, fromHour, toHour)
+}
+
+func (repo *fakeCameraRepository) ListBlinkCounts(ctx context.Context, fromHour int64, toHour int64) (map[int64]int64, error) {
+	return repo.list(repo.blinks, fromHour, toHour)
+}
+
+func (repo *fakeCameraRepository) list(values map[int64]int64, fromHour int64, toHour int64) (map[int64]int64, error) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	if repo.fail {
+		return nil, context.DeadlineExceeded
+	}
+
+	hours := make(map[int64]int64)
+
+	for hour, value := range values {
+		if hour >= fromHour && hour < toHour {
+			hours[hour] = value
+		}
+	}
+
+	return hours, nil
+}
+
 func (repo *fakeCameraRepository) totals() (millis int64, blinks int64) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -246,6 +273,70 @@ func TestCameraServiceReadsTimeoutOnEveryReset(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("the timer kept the old timeout")
+	}
+}
+
+func TestCameraServiceStatisticsIncludesBuffer(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeCameraRepository()
+	hour := hourStart(time.Now())
+
+	// rows of an earlier flush
+	repo.blinks[hour] = 4
+	repo.screen[hour] = 3000
+
+	svc := newTestCameraService(repo)
+	defer svc.Stop()
+
+	// and data still waiting in the buffer
+	svc.FaceDetected()
+	svc.addMillis(hour, 1000)
+	svc.Blink()
+
+	stats, err := svc.Statistics(ctx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if stats.Blinks.Today.Total != 5 {
+		t.Fatalf("expected 4 stored and 1 buffered blink, got %d", stats.Blinks.Today.Total)
+	}
+
+	if stats.ScreenTime.Today.Total != 4000 {
+		t.Fatalf("expected 4000ms of screen time, got %d", stats.ScreenTime.Today.Total)
+	}
+}
+
+func TestStatisticsRangeCoversTheWholeWeek(t *testing.T) {
+	// Tuesday 1 December 2026: the week starts on Monday 30 November, before the month
+	from, to := statisticsRange(time.Date(2026, time.December, 1, 10, 0, 0, 0, time.Local))
+
+	if want := time.Date(2026, time.November, 30, 0, 0, 0, 0, time.Local).Unix(); from != want {
+		t.Fatalf("expected the range to start on 30 November, got %s", time.Unix(from, 0))
+	}
+
+	if want := time.Date(2026, time.December, 2, 0, 0, 0, 0, time.Local).Unix(); to != want {
+		t.Fatalf("expected the range to end on 2 December, got %s", time.Unix(to, 0))
+	}
+
+	// Wednesday 18 November 2026: the week starts inside the month, the month comes first
+	from, _ = statisticsRange(time.Date(2026, time.November, 18, 10, 0, 0, 0, time.Local))
+
+	if want := time.Date(2026, time.November, 1, 0, 0, 0, 0, time.Local).Unix(); from != want {
+		t.Fatalf("expected the range to start on 1 November, got %s", time.Unix(from, 0))
+	}
+}
+
+func TestCameraServiceStatisticsFailedRead(t *testing.T) {
+	repo := newFakeCameraRepository()
+	repo.fail = true
+
+	svc := newTestCameraService(repo)
+	defer svc.Stop()
+
+	if _, err := svc.Statistics(context.Background()); err == nil {
+		t.Fatal("expected an error from a failing repository")
 	}
 }
 

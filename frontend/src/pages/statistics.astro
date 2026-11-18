@@ -1,0 +1,9 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { StatisticsPanel } from "@/components/StatisticsPanel.tsx";
+---
+
+<Layout>
+  <h1>Statistics</h1>
+  <StatisticsPanel client:only />
+</Layout>

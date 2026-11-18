@@ -41,3 +41,34 @@ export const DurationUnitType = {
     DurationUnitSecond: "second",
     DurationUnitMinute: "minute",
 };
+
+/**
+ * StatBucket is one point of a statistics graph: the local start of the hour or day and the
+ * value collected in it.
+ */
+export interface StatBucket {
+    "start": number;
+    "value": number;
+}
+
+export interface StatPeriod {
+    "total": number;
+    "buckets": StatBucket[] | null;
+}
+
+/**
+ * StatPeriodSet is one metric bucketed for the three ranges the statistics page shows.
+ */
+export interface StatPeriodSet {
+    "today": StatPeriod;
+    "week": StatPeriod;
+    "month": StatPeriod;
+}
+
+/**
+ * Statistics is what the statistics page reads: blinks as a count, screen time in millis.
+ */
+export interface Statistics {
+    "blinks": StatPeriodSet;
+    "screenTime": StatPeriodSet;
+}

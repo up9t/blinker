@@ -11,6 +11,10 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 export function Blink(): $CancellablePromise<void> {
     return $Call.ByID(3322327304);
 }
@@ -38,6 +42,14 @@ export function Flush(): $CancellablePromise<void> {
 
 export function Start(): $CancellablePromise<any> {
     return $Call.ByID(739793010);
+}
+
+/**
+ * Statistics reads the hourly rows back and adds the buffer that hasn't been flushed yet, so
+ * the page also shows the blinks and the screen time of the current minute.
+ */
+export function Statistics(): $CancellablePromise<$models.Statistics> {
+    return $Call.ByID(3568730189);
 }
 
 export function Stop(): $CancellablePromise<void> {

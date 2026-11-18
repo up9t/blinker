@@ -269,20 +269,6 @@ func main() {
 		}
 	}
 
-	// app.Event.On(NotificationEventSend, func(event *application.CustomEvent) {
-	// 	data, ok := event.Data.(struct {
-	// 		Title string `json:"title"`
-	// 		Body  string `json:"body"`
-	// 	})
-
-	// 	if !ok {
-	// 		logger.Error("failed to parse notification data", "data", data)
-	// 		return
-	// 	}
-
-	// 	sendNotification(data.Title, data.Body)
-	// })
-
 	overlayMode := overlayModeNone
 
 	go func() {

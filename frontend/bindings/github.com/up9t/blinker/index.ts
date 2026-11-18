@@ -17,5 +17,9 @@ export {
 export type {
     BlinkSettings,
     BreakInfo,
-    Breakpoint
+    Breakpoint,
+    StatBucket,
+    StatPeriod,
+    StatPeriodSet,
+    Statistics
 } from "./models.js";

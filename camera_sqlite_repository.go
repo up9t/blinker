@@ -51,3 +51,37 @@ func (repo *CameraSqliteRepository) AddBlinkCount(ctx context.Context, hour int6
 
 	return err
 }
+
+func (repo *CameraSqliteRepository) ListScreenTime(ctx context.Context, fromHour int64, toHour int64) (map[int64]int64, error) {
+	return repo.listHours(ctx, screenTimeTable, "millis", fromHour, toHour)
+}
+
+func (repo *CameraSqliteRepository) ListBlinkCounts(ctx context.Context, fromHour int64, toHour int64) (map[int64]int64, error) {
+	return repo.listHours(ctx, blinkCountTable, "blinks", fromHour, toHour)
+}
+
+// table and column are package constants, never user input
+func (repo *CameraSqliteRepository) listHours(ctx context.Context, table string, column string, fromHour int64, toHour int64) (map[int64]int64, error) {
+	rows, err := repo.db.QueryContext(ctx, fmt.Sprintf(`SELECT hour, %s FROM %s
+		WHERE hour >= ? AND hour < ?`, column, table), fromHour, toHour)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	hours := make(map[int64]int64)
+
+	for rows.Next() {
+		var hour, value int64
+
+		if err := rows.Scan(&hour, &value); err != nil {
+			return nil, err
+		}
+
+		hours[hour] = value
+	}
+
+	return hours, rows.Err()
+}
