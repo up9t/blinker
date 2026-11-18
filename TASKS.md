@@ -9,6 +9,7 @@
   - [x] Simple camera indicator (badge or something) (active/paused)
   - [x] Tweak/Config/Settings for the blink parameter such as eye close/open threshold and timeout for blink. This one needs to persist/store the data to the backend, and automatically hydrate/load/sync the settings when relaunch/mount/reload the app.
   <!-- detection keeps running while "hidden": the window is moved off screen (x11) or shrunk to 1x1 frameless (wayland), since a hidden/minimised window stops rAF -->
+
 - [x] Breakpoint
   - [x] Breakpoint page (breakpoints.astro)
   - [x] Breakpoint Widget/Panel/both to create/modify/delete breakpoints (settings like Break Interval then Break Duration, disable/enable, title/name)
@@ -20,39 +21,66 @@
   - [x] Save settings data to the backend and automatically hydrate/sync on launch/relaunch/mount/reload the app. This settings is in its own boundary/domain, don't mess with other settings like blink_settings or general/global settings.
   - [x] Add test to the frontend.
   - [x] Send Notification 40 seconds before break, if the break interval is >= 40 seconds. Store the number as a constant variable for now. With data of title=appname,body="Break is coming! 40s (name-of-the-break-here)"
-  - [ ] (later needs overlay editor) Asset selection dropdown to customize audio/sound and layout.
+  - [ ] (later needs assets manager) Add 2 selection dropdowns to choose what audio/sound and layout to use based on what available in the assets manager.
+  - [ ] (later needs assets manager) Play a sound when break ends, based on the selected audio
+  - [ ] (later needs assets manager) Load the selectect ui layout when the break start.
   - [ ] (later needs overlay editor) Customize break UI, through Overlay Editor (see below)
+
 - [ ] Overlay/Break Editor (need Asset Manager)
   - [ ] Show/preview using the base layout + the customized user content as the child component
   - [ ] Select file from assets manager (dropdown options + open in editor button)
   - [ ] Live preview, when there is change in the file in the selected option, automatically mirror the change in the browser.
+
 - [x] Statistics
   - [x] Stored on the backend using sqlite. Buffered/aggregated/debounce/timeout, before sending the count data to the backend.
   - [x] Statistics page (statistics.astro)
   - [x] Show Total Blink Count: today, this week, this month
   - [x] Show Blink Count Graph: Today (hourly), This week (Per day), This month (Per day)
   - [x] Screen time this day, this week (per day), this month (per day).
+
 - [ ] Settings (Global settings)
   - [ ] Editor path and argument
+
 - [x] Tray
   - [x] Active as system tray when hide.
   - [x] Reset next break
+
 - [ ] Assets Manager
-  - [ ] Allow user upload custom assets such as audio for custom notif sound, html layout for breakpoints ui.
+  - [ ] Allow user upload/import custom assets such as audio for custom notif sound, html layout for breakpoints ui. 
+  - [ ] Assets Type: Audio/Overlay.
+  - [ ] Import by Drag & drop.
+  - [ ] If user drop audio files only, automatically create a new assets (a directory with a package.json, maybe need to create template/package.json file first) with type audio. If they drop audio files with html files, make it assets type overlay.
+  - [ ] (Later) Import by Install asset through a registry.
+  - [ ] Frontend can retrieve info from the backend such as asset name, asset type (audio/layout), list audio, list layout, etc. To be used in the "breakpoints" page, and "overlay" editor. 
+  - [ ] Uploaded content should be copied somewhere in a directory such as appdir/assets/.
+  - [ ] Button to open assets dir in file manager. Frontend -> Backend. Does wails have this capability? I need to know it first.
+  - [ ] Asset manifest defined in package.json. And "displayName" would be the data user see in the dropdown option in the breakpoints page.
+  - [ ] Scan assets only 1-level directly inside the asset directory.
+  - [ ] Enable/Disable assets. Disabled asset won't be shown in the dropdown selection.
+  - [ ] AssetsManager/AssetsService on the backend.
+  - [ ] Create Test AssetsManager/Service.
+
 - [ ] Testing
   - Write different kinds of tests. Ensuring quality of the code and performance.
+
 - [ ] CI/CD
   - Github action auto build/release.
+
 - [ ] Extension/Plugin
   - Idk how it worked
+
 - [ ] Logo (developer job, DO NOT INTERFERE!)
   - Update logo 
+
 - [ ] Web (developer job, DO NOT INTERFERE!)
   - Make a website or landing page about this project 
+
 - [ ] Flatpak
   - Change flatpak name from org.blinker.Blinker to ... wait I haven't think of it yet. Ignore this one.
+
 - [ ] Docs
   - Update the showcase images
   - Update README.md
+
 - [ ] UI (developer job, DO NOT INTERFERE!)
-  - Design a beautiful UI (lowest priority right now, consider using Shadcn components).
+  - Design a beautiful/playful UI (lowest priority right now, consider using Shadcn components).
