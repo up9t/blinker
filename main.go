@@ -4,15 +4,17 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"uuid"
-
-	"log"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
+
+	"github.com/adrg/xdg"
 )
 
 // Wails uses Go's `embed` package to embed the frontend files into the binary.
@@ -38,12 +40,6 @@ const (
 // far enough away that no monitor can show it
 const offscreenPosition = -10000
 
-// keep the window mapped but tiny, Wayland ignores requested positions
-const (
-	hiddenWidth  = 1
-	hiddenHeight = 1
-)
-
 func init() {
 	// Register a custom event whose associated data type is string.
 	// This is not required, but the binding generator will pick up registered events
@@ -52,18 +48,40 @@ func init() {
 	application.RegisterEvent[BreakInfo](BreakEventStart)
 }
 
+const AppName = "Blinker"
+
+func getAppDataDir() (string, error) {
+	appDataDir := filepath.Join(xdg.DataHome, AppName)
+
+	if err := os.MkdirAll(appDataDir, 0755); err != nil {
+		return "", err
+	}
+
+	return appDataDir, nil
+}
+
 // main function serves as the application's entry point. It initializes the application, creates a window,
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
 func main() {
-	appName := "Blinker"
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	ctx := context.Background()
 
 	notifier := notifications.New()
 
-	dbPath := "./app.sqlite3"
+	appDataDir, err := getAppDataDir()
+
+	if err != nil {
+		logger.Error("failed to get app data directory",
+			"path", appDataDir,
+			"err", err,
+		)
+
+		return
+	}
+
+	dbPath := filepath.Join(appDataDir, "app.sqlite3")
 	db, err := NewSqliteDB(dbPath)
 
 	if err != nil {
@@ -126,7 +144,7 @@ func main() {
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
 	app := application.New(application.Options{
-		Name:        appName,
+		Name:        AppName,
 		Description: "Helps lubricate eyes by forcing user to blink.",
 		Services: []application.Service{
 			application.NewService(breakpointService),
@@ -231,7 +249,7 @@ func main() {
 	// Create system tray
 	systray := app.SystemTray.New()
 	// systray.SetIcon(icon)
-	systray.SetLabel(appName)
+	systray.SetLabel(AppName)
 	// AttachWindow's default toggle calls Hide(), which stops the webview rendering,
 	// so the click has to go through the off screen hide/show instead.
 	systray.OnClick(func() {
@@ -274,7 +292,7 @@ func main() {
 			case ev := <-bpEvent:
 				switch ev.typ {
 				case BreakpointEventBreakSoon:
-					sendNotification(appName, fmt.Sprintf("Break is coming! %ds (%s)", ev.data.RemainingMs/1000, ev.data.Name))
+					sendNotification(AppName, fmt.Sprintf("Break is coming! %ds (%s)", ev.data.RemainingMs/1000, ev.data.Name))
 				case BreakpointEventStartBreak:
 					// a break is more important than a blink reminder, it takes the overlay
 					overlayMode = overlayModeBreak
@@ -313,7 +331,7 @@ func main() {
 						unit = "hour"
 					}
 
-					sendNotification(appName, fmt.Sprintf("You've been on screen for %d %s today. Take a short break.", ev.hours, unit))
+					sendNotification(AppName, fmt.Sprintf("You've been on screen for %d %s today. Take a short break.", ev.hours, unit))
 				}
 			}
 		}

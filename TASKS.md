@@ -78,8 +78,8 @@
 - [ ] Web (developer job, DO NOT INTERFERE!)
   - Make a website or landing page about this project 
 
-- [ ] Flatpak
-  - Change flatpak name from org.blinker.Blinker to ... wait I haven't think of it yet. Ignore this one.
+- [x] Flatpak
+  - [x] Store data persistently
 
 - [ ] Docs
   - Update the showcase images

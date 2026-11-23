@@ -3,6 +3,7 @@ module github.com/up9t/blinker
 go 1.27.3
 
 require (
+	github.com/adrg/xdg v0.5.3
 	github.com/wailsapp/wails/v3 v3.1.0
 	modernc.org/sqlite v1.62.0
 )

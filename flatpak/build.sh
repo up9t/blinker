@@ -6,4 +6,4 @@ flatpak run org.flatpak.Builder \
  --force-clean \
  --install-deps-from=flathub \
  ./flatpak/build/ \
- ./flatpak/org.blinker.Blinker.yaml
+ ./flatpak/manifest.yaml
