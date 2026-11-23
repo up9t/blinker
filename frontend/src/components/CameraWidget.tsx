@@ -40,9 +40,14 @@ export function CameraWidget() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      if (present.current) {
-        setToday((prev) => prev && { ...prev, screenTime: prev.screenTime + SCREEN_TIME_TICK_MS });
+      if (!present.current) {
+        return;
       }
+
+      setToday((prev) => prev && { ...prev, screenTime: prev.screenTime + SCREEN_TIME_TICK_MS });
+      // doubles as the presence heartbeat: the backend stops counting a few seconds after
+      // this stops arriving, so a stalled or hidden frontend can't keep screen time running
+      call(cameraService.faceDetected());
     }, SCREEN_TIME_TICK_MS);
 
     return function () {

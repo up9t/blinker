@@ -20,7 +20,8 @@ export function Blink(): $CancellablePromise<void> {
 }
 
 /**
- * FaceDetected starts the screen time and blink timers. Repeated calls are no-ops.
+ * FaceDetected starts the screen time and blink timers. It doubles as the presence
+ * heartbeat: repeated calls only refresh the liveness stamp.
  */
 export function FaceDetected(): $CancellablePromise<void> {
     return $Call.ByID(2184259749);

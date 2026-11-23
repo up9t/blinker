@@ -10,6 +10,9 @@ const (
 	cameraTickInterval    = time.Second
 	cameraFlushInterval   = 30 * time.Second
 	cameraEventBufferSize = 16
+	// the page still has to check in: a stalled, crashed or hidden frontend would otherwise
+	// leave the timers counting with nobody there to report a face lost
+	cameraPresenceTTL = 3 * time.Second
 )
 
 // CameraService owns all the timers. The frontend only reports edges:
@@ -20,14 +23,17 @@ type CameraService struct {
 
 	mu      sync.Mutex
 	present bool
+	// last heartbeat, so a frontend that went away stops counting
+	lastSeen time.Time
 	// unflushed data, hour -> value
 	hourMillis map[int64]int64
 	hourBlinks map[int64]int64
 	blinkTimer *time.Timer
 
-	tick    time.Duration
-	timeout func() time.Duration
-	flush   time.Duration
+	tick        time.Duration
+	presenceTTL time.Duration
+	timeout     func() time.Duration
+	flush       time.Duration
 
 	done     chan struct{}
 	stopOnce sync.Once
@@ -38,14 +44,15 @@ type CameraService struct {
 // restarting the camera
 func NewCameraService(repo CameraRepository, timeout func() time.Duration) *CameraService {
 	return &CameraService{
-		repo:       repo,
-		eventCh:    make(chan CameraEvent, cameraEventBufferSize),
-		hourMillis: make(map[int64]int64),
-		hourBlinks: make(map[int64]int64),
-		tick:       cameraTickInterval,
-		timeout:    timeout,
-		flush:      cameraFlushInterval,
-		done:       make(chan struct{}),
+		repo:        repo,
+		eventCh:     make(chan CameraEvent, cameraEventBufferSize),
+		hourMillis:  make(map[int64]int64),
+		hourBlinks:  make(map[int64]int64),
+		tick:        cameraTickInterval,
+		presenceTTL: cameraPresenceTTL,
+		timeout:     timeout,
+		flush:       cameraFlushInterval,
+		done:        make(chan struct{}),
 	}
 }
 
@@ -107,16 +114,22 @@ func (svc *CameraService) runFlusher() {
 	}
 }
 
-// A tick only counts as screen time while the user's face is on screen.
+// A tick only counts as screen time while the user's face is on screen and the page is
+// still checking in.
 func (svc *CameraService) addMillis(hour int64, millis int64) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	if !svc.present {
+	if !svc.fresh() {
 		return
 	}
 
 	svc.hourMillis[hour] += millis
+}
+
+// caller must hold svc.mu
+func (svc *CameraService) fresh() bool {
+	return svc.present && time.Since(svc.lastSeen) < svc.presenceTTL
 }
 
 func (svc *CameraService) addBlinks(hour int64) {
@@ -240,10 +253,13 @@ func (svc *CameraService) TodayStatistics(ctx context.Context) (TodayStatistics,
 	}, nil
 }
 
-// FaceDetected starts the screen time and blink timers. Repeated calls are no-ops.
+// FaceDetected starts the screen time and blink timers. It doubles as the presence
+// heartbeat: repeated calls only refresh the liveness stamp.
 func (svc *CameraService) FaceDetected() {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
+
+	svc.lastSeen = time.Now()
 
 	if svc.present {
 		return
@@ -281,6 +297,9 @@ func (svc *CameraService) Blink() {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
+	// a blink comes from the same page, so it proves the page is still there
+	svc.lastSeen = time.Now()
+
 	if svc.present {
 		svc.resetBlinkTimer()
 	}
@@ -294,10 +313,10 @@ func (svc *CameraService) resetBlinkTimer() {
 
 	svc.blinkTimer = time.AfterFunc(svc.timeout(), func() {
 		svc.mu.Lock()
-		present := svc.present
+		fresh := svc.fresh()
 		svc.mu.Unlock()
 
-		if present {
+		if fresh {
 			svc.emit(CameraEventBlinkReminder)
 		}
 	})

@@ -308,6 +308,52 @@ func TestCameraServiceStatisticsIncludesBuffer(t *testing.T) {
 	}
 }
 
+func TestCameraServiceStopsCountingWhenTheHeartbeatStops(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeCameraRepository()
+	svc := newTestCameraService(repo)
+	svc.presenceTTL = 30 * time.Millisecond
+	svc.Start()
+	defer svc.Stop()
+
+	// one heartbeat, then the page goes away without a FaceLost
+	svc.FaceDetected()
+	time.Sleep(100 * time.Millisecond)
+	svc.Flush(ctx)
+
+	stale, _ := repo.totals()
+
+	if stale == 0 {
+		t.Fatal("expected screen time to be counted while the page was checking in")
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	svc.Flush(ctx)
+
+	if afterIdle, _ := repo.totals(); afterIdle != stale {
+		t.Fatalf("screen time kept counting with a silent page: %d -> %d", stale, afterIdle)
+	}
+}
+
+func TestCameraServiceNoReminderAfterThePageGoesAway(t *testing.T) {
+	repo := newFakeCameraRepository()
+	svc := NewCameraService(repo, func() time.Duration { return 20 * time.Millisecond })
+	svc.tick = time.Hour
+	svc.flush = time.Hour
+	svc.presenceTTL = 5 * time.Millisecond
+
+	events := svc.Start()
+	defer svc.Stop()
+
+	svc.FaceDetected()
+
+	select {
+	case ev := <-events:
+		t.Fatalf("expected no reminder for a silent page, got %d", ev.typ)
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
 func TestCameraServiceTodayStatisticsIgnoresOtherDays(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeCameraRepository()
