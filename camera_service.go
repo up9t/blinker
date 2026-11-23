@@ -13,6 +13,8 @@ const (
 	// the page still has to check in: a stalled, crashed or hidden frontend would otherwise
 	// leave the timers counting with nobody there to report a face lost
 	cameraPresenceTTL = 3 * time.Second
+	// every this much counted screen time in a day, remind the user to take a break
+	cameraReminderInterval = time.Hour
 )
 
 // CameraService owns all the timers. The frontend only reports edges:
@@ -29,9 +31,14 @@ type CameraService struct {
 	hourMillis map[int64]int64
 	hourBlinks map[int64]int64
 	blinkTimer *time.Timer
+	// local start of the day todayMillis belongs to, so a new day resets the reminder
+	dayStart      int64
+	todayMillis   int64
+	notifiedHours int64
 
 	tick        time.Duration
 	presenceTTL time.Duration
+	reminder    time.Duration
 	timeout     func() time.Duration
 	flush       time.Duration
 
@@ -50,6 +57,7 @@ func NewCameraService(repo CameraRepository, timeout func() time.Duration) *Came
 		hourBlinks:  make(map[int64]int64),
 		tick:        cameraTickInterval,
 		presenceTTL: cameraPresenceTTL,
+		reminder:    cameraReminderInterval,
 		timeout:     timeout,
 		flush:       cameraFlushInterval,
 		done:        make(chan struct{}),
@@ -57,6 +65,8 @@ func NewCameraService(repo CameraRepository, timeout func() time.Duration) *Came
 }
 
 func (svc *CameraService) Start() <-chan CameraEvent {
+	svc.seedReminder(context.Background())
+
 	svc.wg.Add(2)
 	go svc.runTicker()
 	go svc.runFlusher()
@@ -118,13 +128,53 @@ func (svc *CameraService) runFlusher() {
 // still checking in.
 func (svc *CameraService) addMillis(hour int64, millis int64) {
 	svc.mu.Lock()
-	defer svc.mu.Unlock()
 
 	if !svc.fresh() {
+		svc.mu.Unlock()
 		return
 	}
 
 	svc.hourMillis[hour] += millis
+
+	// the reminder is a day total, so a new day starts counting hours again
+	if day := startOfDay(time.Unix(hour, 0)).Unix(); day != svc.dayStart {
+		svc.dayStart = day
+		svc.todayMillis = 0
+		svc.notifiedHours = 0
+	}
+
+	svc.todayMillis += millis
+	hours := svc.todayMillis / int64(svc.reminder/time.Millisecond)
+	notify := int64(0)
+
+	if hours > svc.notifiedHours {
+		svc.notifiedHours = hours
+		notify = hours
+	}
+
+	// emitted after the unlock: a send must not happen while the ticker holds the mutex
+	svc.mu.Unlock()
+
+	if notify > 0 {
+		svc.emit(CameraEvent{typ: CameraEventScreenTimeReminder, hours: int(notify)})
+	}
+}
+
+// seedReminder continues from the stored day total, so a relaunch doesn't announce the
+// hours that were already reached. A failed read just starts the day from zero.
+func (svc *CameraService) seedReminder(ctx context.Context) {
+	today, err := svc.TodayStatistics(ctx)
+
+	if err != nil {
+		return
+	}
+
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	svc.dayStart = startOfDay(time.Now()).Unix()
+	svc.todayMillis = today.ScreenTime
+	svc.notifiedHours = today.ScreenTime / int64(svc.reminder/time.Millisecond)
 }
 
 // caller must hold svc.mu
@@ -285,14 +335,14 @@ func (svc *CameraService) FaceLost(ctx context.Context) error {
 	}
 	svc.mu.Unlock()
 
-	svc.emit(CameraEventBlinkDismiss)
+	svc.emit(CameraEvent{typ: CameraEventBlinkDismiss})
 
 	return svc.Flush(ctx)
 }
 
 func (svc *CameraService) Blink() {
 	svc.addBlinks(hourStart(time.Now()))
-	svc.emit(CameraEventBlinkDismiss)
+	svc.emit(CameraEvent{typ: CameraEventBlinkDismiss})
 
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
@@ -317,14 +367,14 @@ func (svc *CameraService) resetBlinkTimer() {
 		svc.mu.Unlock()
 
 		if fresh {
-			svc.emit(CameraEventBlinkReminder)
+			svc.emit(CameraEvent{typ: CameraEventBlinkReminder})
 		}
 	})
 }
 
-func (svc *CameraService) emit(typ CameraEventType) {
+func (svc *CameraService) emit(ev CameraEvent) {
 	select {
-	case svc.eventCh <- CameraEvent{typ: typ}:
+	case svc.eventCh <- ev:
 	case <-svc.done:
 	}
 }

@@ -9,6 +9,7 @@
   - [x] Tweak/Config/Settings for the blink parameter such as eye close/open threshold and timeout for blink. This one needs to persist/store the data to the backend, and automatically hydrate/load/sync the settings when relaunch/mount/reload the app.
   - [x] Show Today's Screen Time on CameraWidget.tsx.
   - [x] Show Today's Blink Count on CameraWidget.tsx. (reads today's stored total on mount, so it survives navigation)
+  - [x] Each hour of screen time, send a reminder/notification. (hour of today's total, survives restarts by seeding from the stored day total)
   <!-- detection keeps running while "hidden": the window is moved off screen (x11) or shrunk to 1x1 frameless (wayland), since a hidden/minimised window stops rAF -->
 
 - [x] Breakpoint

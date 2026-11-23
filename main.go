@@ -309,6 +309,13 @@ func main() {
 
 					overlayMode = overlayModeNone
 					overlayWindow.Hide()
+				case CameraEventScreenTimeReminder:
+					unit := "hours"
+					if ev.hours == 1 {
+						unit = "hour"
+					}
+
+					sendNotification(appName, fmt.Sprintf("You've been on screen for %d %s today. Take a short break.", ev.hours, unit))
 				}
 			}
 		}

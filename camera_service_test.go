@@ -98,6 +98,103 @@ func newTestCameraService(repo CameraRepository) *CameraService {
 	return svc
 }
 
+// the ticker would add its own screen time and make the reminder thresholds fuzzy
+func newReminderTestService(repo CameraRepository) *CameraService {
+	svc := newTestCameraService(repo)
+	svc.tick = time.Hour
+
+	return svc
+}
+
+// one reminder event, or a failure after a short wait
+func expectReminder(t *testing.T, events <-chan CameraEvent, hours int) {
+	t.Helper()
+
+	select {
+	case ev := <-events:
+		if ev.typ != CameraEventScreenTimeReminder {
+			t.Fatalf("expected a screen time reminder, got %d", ev.typ)
+		}
+
+		if ev.hours != hours {
+			t.Fatalf("expected %d hours in the reminder, got %d", hours, ev.hours)
+		}
+	case <-time.After(200 * time.Millisecond):
+		t.Fatalf("no screen time reminder for %d hours", hours)
+	}
+}
+
+func expectNoReminder(t *testing.T, events <-chan CameraEvent) {
+	t.Helper()
+
+	select {
+	case ev := <-events:
+		t.Fatalf("unexpected event %d", ev.typ)
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestCameraServiceReminderContinuesFromTodayTotal(t *testing.T) {
+	repo := newFakeCameraRepository()
+	// an hour already counted before this launch
+	repo.screen[hourStart(time.Now())] = int64(time.Hour / time.Millisecond)
+
+	svc := newReminderTestService(repo)
+	events := svc.Start()
+	defer svc.Stop()
+
+	svc.FaceDetected()
+
+	svc.addMillis(hourStart(time.Now()), int64(30*time.Minute/time.Millisecond))
+	expectNoReminder(t, events)
+
+	svc.addMillis(hourStart(time.Now()), int64(30*time.Minute/time.Millisecond))
+	expectReminder(t, events, 2)
+}
+
+func TestCameraServiceReminderSkipsPassedHoursOnStart(t *testing.T) {
+	repo := newFakeCameraRepository()
+	repo.screen[hourStart(time.Now())] = int64(2 * time.Hour / time.Millisecond)
+
+	svc := newReminderTestService(repo)
+	events := svc.Start()
+	defer svc.Stop()
+
+	svc.FaceDetected()
+	svc.addMillis(hourStart(time.Now()), int64(time.Minute/time.Millisecond))
+
+	expectNoReminder(t, events)
+}
+
+func TestCameraServiceNoReminderWithoutAFace(t *testing.T) {
+	repo := newFakeCameraRepository()
+	svc := newReminderTestService(repo)
+	events := svc.Start()
+	defer svc.Stop()
+
+	svc.addMillis(hourStart(time.Now()), int64(time.Hour/time.Millisecond))
+
+	expectNoReminder(t, events)
+}
+
+func TestCameraServiceReminderRestartsOnANewDay(t *testing.T) {
+	repo := newFakeCameraRepository()
+	svc := newReminderTestService(repo)
+	events := svc.Start()
+	defer svc.Stop()
+
+	svc.FaceDetected()
+	svc.addMillis(hourStart(time.Now()), int64(time.Hour/time.Millisecond))
+	expectReminder(t, events, 1)
+
+	tomorrow := hourStart(time.Now().AddDate(0, 0, 1))
+	svc.addMillis(tomorrow, int64(59*time.Minute/time.Millisecond))
+	expectNoReminder(t, events)
+
+	svc.addMillis(tomorrow, int64(time.Minute/time.Millisecond))
+	expectReminder(t, events, 1)
+}
+
 func TestCameraServiceScreenTimeOnlyWhilePresent(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeCameraRepository()
