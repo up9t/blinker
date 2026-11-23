@@ -72,3 +72,11 @@ export interface Statistics {
     "blinks": StatPeriodSet;
     "screenTime": StatPeriodSet;
 }
+
+/**
+ * TodayStatistics is what the camera widget shows: one total per metric, no buckets.
+ */
+export interface TodayStatistics {
+    "blinks": number;
+    "screenTime": number;
+}

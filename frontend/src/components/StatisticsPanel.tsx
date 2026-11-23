@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { WailsStatisticsService } from "../lib/adapters/wails_statistics.ts";
+import { formatDuration } from "../lib/duration.ts";
 import type { IStatBucket, IStatPeriodSet, IStatistics } from "../lib/ports/statistics.ts";
 
 const statisticsService = new WailsStatisticsService();
@@ -9,21 +10,6 @@ const dayFormat = new Intl.DateTimeFormat(undefined, { month: "short", day: "num
 
 const formatHour = (start: number) => hourFormat.format(new Date(start * 1000));
 const formatDay = (start: number) => dayFormat.format(new Date(start * 1000));
-
-// screen time arrives in millis, which are unreadable as a total
-function formatDuration(millis: number): string {
-  const minutes = Math.floor(millis / 60_000);
-
-  if (minutes < 1) {
-    return `${Math.floor(millis / 1000)}s`;
-  }
-
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
-
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-}
 
 export function StatisticsPanel() {
   const [stats, setStats] = useState<IStatistics | null>(null);

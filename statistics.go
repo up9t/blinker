@@ -27,6 +27,12 @@ type Statistics struct {
 	ScreenTime StatPeriodSet `json:"screenTime"`
 }
 
+// TodayStatistics is what the camera widget shows: one total per metric, no buckets.
+type TodayStatistics struct {
+	Blinks     int64 `json:"blinks"`
+	ScreenTime int64 `json:"screenTime"`
+}
+
 func startOfDay(t time.Time) time.Time {
 	t = t.Local()
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.Local)

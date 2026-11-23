@@ -25,6 +25,14 @@ export interface IStatistics {
   screenTime: IStatPeriodSet;
 }
 
+// mirrors TodayStatistics in statistics.go, screenTime in millis
+export interface ITodayStatistics {
+  blinks: number;
+  screenTime: number;
+}
+
 export interface IStatisticsService {
   statistics(): Promise<IStatistics>;
+  // one total per metric for today, no buckets
+  today(): Promise<ITodayStatistics>;
 }

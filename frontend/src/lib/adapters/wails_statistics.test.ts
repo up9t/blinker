@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const bindings = vi.hoisted(() => ({
   Statistics: vi.fn(),
+  TodayStatistics: vi.fn(),
 }));
 
 vi.mock("../../../bindings/github.com/up9t/blinker/index.js", () => ({
@@ -31,5 +32,13 @@ describe("WailsStatisticsService", () => {
 
     expect(await service.statistics()).toEqual(stats);
     expect(bindings.Statistics).toHaveBeenCalledOnce();
+  });
+
+  it("reads today's totals from the camera service", async () => {
+    const today = { blinks: 12, screenTime: 90_000 };
+    bindings.TodayStatistics.mockResolvedValue(today);
+
+    expect(await service.today()).toEqual(today);
+    expect(bindings.TodayStatistics).toHaveBeenCalledOnce();
   });
 });

@@ -21,5 +21,6 @@ export type {
     StatBucket,
     StatPeriod,
     StatPeriodSet,
-    Statistics
+    Statistics,
+    TodayStatistics
 } from "./models.js";

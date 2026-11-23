@@ -212,6 +212,34 @@ func (svc *CameraService) Statistics(ctx context.Context) (Statistics, error) {
 	}, nil
 }
 
+// TodayStatistics is the cheap read for the camera widget: only today's rows are read and
+// the unflushed buffer is added, so no buckets and no week/month range are built.
+func (svc *CameraService) TodayStatistics(ctx context.Context) (TodayStatistics, error) {
+	day := startOfDay(time.Now())
+	from, to := day.Unix(), day.AddDate(0, 0, 1).Unix()
+
+	// same lock span as Statistics: a flush in between would move data out of the buffer
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	blinks, err := svc.repo.ListBlinkCounts(ctx, from, to)
+
+	if err != nil {
+		return TodayStatistics{}, err
+	}
+
+	screen, err := svc.repo.ListScreenTime(ctx, from, to)
+
+	if err != nil {
+		return TodayStatistics{}, err
+	}
+
+	return TodayStatistics{
+		Blinks:     sumHours(blinks, from, to) + sumHours(svc.hourBlinks, from, to),
+		ScreenTime: sumHours(screen, from, to) + sumHours(svc.hourMillis, from, to),
+	}, nil
+}
+
 // FaceDetected starts the screen time and blink timers. Repeated calls are no-ops.
 func (svc *CameraService) FaceDetected() {
 	svc.mu.Lock()

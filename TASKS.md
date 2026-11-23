@@ -4,10 +4,11 @@
   - [x] Blink Detector
   - [x] Camera Selection
   - [x] Screen time (face detect -> send event -> timer run on backend, face undetect -> send event -> timer stop), store data to sqlite, with buffered/timeout/aggregated/debounce.
-  - [x] Blink Count
   - [x] Enter efficiency mode when the user isn't on screen for a few seconds, simple timeout to detect if the user is back on screen.
   - [x] Simple camera indicator (badge or something) (active/paused)
   - [x] Tweak/Config/Settings for the blink parameter such as eye close/open threshold and timeout for blink. This one needs to persist/store the data to the backend, and automatically hydrate/load/sync the settings when relaunch/mount/reload the app.
+  - [x] Show Today's Screen Time on CameraWidget.tsx.
+  - [x] Show Today's Blink Count on CameraWidget.tsx. (reads today's stored total on mount, so it survives navigation)
   <!-- detection keeps running while "hidden": the window is moved off screen (x11) or shrunk to 1x1 frameless (wayland), since a hidden/minimised window stops rAF -->
 
 - [x] Breakpoint

@@ -55,3 +55,11 @@ export function Statistics(): $CancellablePromise<$models.Statistics> {
 export function Stop(): $CancellablePromise<void> {
     return $Call.ByID(2879116210);
 }
+
+/**
+ * TodayStatistics is the cheap read for the camera widget: only today's rows are read and
+ * the unflushed buffer is added, so no buckets and no week/month range are built.
+ */
+export function TodayStatistics(): $CancellablePromise<$models.TodayStatistics> {
+    return $Call.ByID(2252347200);
+}

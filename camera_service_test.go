@@ -308,6 +308,52 @@ func TestCameraServiceStatisticsIncludesBuffer(t *testing.T) {
 	}
 }
 
+func TestCameraServiceTodayStatisticsIgnoresOtherDays(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeCameraRepository()
+	now := time.Now()
+	hour := hourStart(now)
+	yesterday := hourStart(now.AddDate(0, 0, -1))
+
+	repo.blinks[hour] = 4
+	repo.screen[hour] = 3000
+	repo.blinks[yesterday] = 9
+	repo.screen[yesterday] = 9000
+
+	svc := newTestCameraService(repo)
+	defer svc.Stop()
+
+	svc.FaceDetected()
+	svc.addMillis(hour, 1000)
+	svc.Blink()
+
+	today, err := svc.TodayStatistics(ctx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if today.Blinks != 5 {
+		t.Fatalf("expected 4 stored and 1 buffered blink today, got %d", today.Blinks)
+	}
+
+	if today.ScreenTime != 4000 {
+		t.Fatalf("expected 4000ms of screen time today, got %d", today.ScreenTime)
+	}
+}
+
+func TestCameraServiceTodayStatisticsFailedRead(t *testing.T) {
+	repo := newFakeCameraRepository()
+	repo.fail = true
+
+	svc := newTestCameraService(repo)
+	defer svc.Stop()
+
+	if _, err := svc.TodayStatistics(context.Background()); err == nil {
+		t.Fatal("expected an error from a failing repository")
+	}
+}
+
 func TestStatisticsRangeCoversTheWholeWeek(t *testing.T) {
 	// Tuesday 1 December 2026: the week starts on Monday 30 November, before the month
 	from, to := statisticsRange(time.Date(2026, time.December, 1, 10, 0, 0, 0, time.Local))
