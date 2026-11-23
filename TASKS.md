@@ -23,6 +23,7 @@
   - [x] Save settings data to the backend and automatically hydrate/sync on launch/relaunch/mount/reload the app. This settings is in its own boundary/domain, don't mess with other settings like blink_settings or general/global settings.
   - [x] Add test to the frontend.
   - [x] Send Notification 40 seconds before break, if the break interval is >= 40 seconds. Store the number as a constant variable for now. With data of title=appname,body="Break is coming! 40s (name-of-the-break-here)"
+  - [ ] Play a sound on finish break (backend).
   - [ ] (later needs assets manager) Add 2 selection dropdowns to choose what audio/sound and layout to use based on what available in the assets manager.
   - [ ] (later needs assets manager) Play a sound when break ends, based on the selected audio
   - [ ] (later needs assets manager) Load the selectect ui layout when the break start.
