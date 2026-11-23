@@ -1,6 +1,6 @@
 id: org.blinker.Blinker
 runtime: org.gnome.Platform
-runtime-version: '50'
+runtime-version: "51"
 sdk: org.gnome.Sdk
 command: blinker
 rename-icon: blinker
@@ -15,8 +15,11 @@ finish-args:
   - --env=GTK_THEME=Adwaita:dark
 
   # Modern flatpak app doesn't need this to send notifications.
-  # but Tauri notification plugin at the time doesn't support portal. 
+  # but my framework needs it
   - --talk-name=org.freedesktop.Notifications
+
+  # KDE System tray
+  - --talk-name=org.kde.StatusNotifierWatcher
 
 modules:
   - name: blinker
@@ -24,13 +27,12 @@ modules:
     build-commands:
       - install -Dm755 blinker /app/bin/blinker
     post-install:
-      - install -Dm644 ./app.desktop ${FLATPAK_DEST}/share/applications/app.desktop
+      - install -Dm644 ./blinker.desktop ${FLATPAK_DEST}/share/applications/app.desktop
       - install -Dm644 ./icon.svg ${FLATPAK_DEST}/share/icons/hicolor/scalable/apps/blinker.svg
     sources:
       - type: file
-        path: ../src-tauri/target/release/blinker
+        path: ../bin/blinker
       - type: file
-        path: ../public/icon.svg
+        path: ../frontend/public/icon.svg
       - type: file
-        path: ../app.desktop
-
+        path: ../build/linux/blinker.desktop

@@ -13,3 +13,5 @@ old/
 /*.db
 /*.sqlite
 /*.sqlite3
+/flatpak/repo
+/flatpak/build

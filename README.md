@@ -102,14 +102,29 @@ npm ci
 # build
 npm run tauri -- build --no-bundle
 
-# flatpak build
-flatpak-builder --repo=repo --force-clean build-dir/ ./flatpak/org.blinker.Blinker.yaml
+# flatpak build (flatpak-builder)
+flatpak-builder \
+ --user \
+ --force-clean \
+ --install-deps-from=flathub \
+ --repo=./flatpakrepo \
+ ./flatpak/build/ \
+ ./flatpak/org.blinker.Blinker.yaml
+
+# flatpak build (flatpak version)
+flatpak run org.flatpak.Builder \
+ --user \
+ --repo=./flatpak/repo \
+ --force-clean \
+ --install-deps-from=flathub \
+ ./flatpak/build/ \
+ ./flatpak/org.blinker.Blinker.yaml
 # if you don't want to use read only fuse file (e.g in container).
-# flatpak-builder --repo=repo --force-clean --disable-rofiles-fuse build-dir/ ./flatpak/org.blinker.Blinker.yaml
+# flatpak-builder --repo=repo --force-clean --disable-rofiles-fuse ./flatpak/build/ ./flatpak/org.blinker.Blinker.yaml
 
 
 # install
-flatpak --user install ./repo org.blinker.Blinker -y
+flatpak --user install ./flatpak/repo org.blinker.Blinker -y
 flatpak run org.blinker.Blinker
 ```
 

@@ -140,6 +140,9 @@ func main() {
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
+		Linux: application.LinuxOptions{
+			ApplicationID: "org.blinker.Blinker",
+		},
 	})
 
 	// Create a new window with the necessary options.
