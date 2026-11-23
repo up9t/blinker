@@ -181,6 +181,8 @@ func main() {
 		BackgroundColour: application.NewRGB(6, 7, 15),
 		URL:              "/overlay/",
 		Hidden:           true,
+		Frameless:        true,
+		StartState:       application.WindowStateFullscreen,
 	})
 
 	mainWindow.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
@@ -190,7 +192,7 @@ func main() {
 	// A hidden or minimised window stops the webview rendering, which stops the camera
 	// loop. So "hiding" keeps the window mapped and makes it as invisible as the platform
 	// allows: off screen (X11) and 1x1 (Wayland, which ignores requested positions).
-	var savedX, savedY, savedWidth, savedHeight int
+	var savedX, savedY int
 	hidden := false
 
 	hideMainWindow := func() {
@@ -199,24 +201,17 @@ func main() {
 		}
 
 		savedX, savedY = mainWindow.Position()
-		savedWidth, savedHeight = mainWindow.Size()
 		hidden = true
 
 		// a tiny window still shows its decorations, so drop the frame while hidden
 		// GTK4 ignores the default size on a mapped resizable window, a non-resizable
 		// one has to follow it
-		mainWindow.SetResizable(false)
-		mainWindow.SetSize(hiddenWidth, hiddenHeight)
-		mainWindow.SetFrameless(true)
 		mainWindow.SetPosition(offscreenPosition, offscreenPosition)
 	}
 
 	showMainWindow := func() {
 		if hidden {
 			// resize while still non-resizable, then make it resizable again
-			mainWindow.SetSize(savedWidth, savedHeight)
-			mainWindow.SetResizable(true)
-			mainWindow.SetFrameless(false)
 			mainWindow.SetPosition(savedX, savedY)
 			hidden = false
 		}
