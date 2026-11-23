@@ -13,7 +13,6 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
-	_ "modernc.org/sqlite"
 )
 
 // Wails uses Go's `embed` package to embed the frontend files into the binary.
