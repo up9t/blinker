@@ -72,11 +72,17 @@ export function BreakOverlay() {
         {formatCountdown(remainingMs(endsAt, now))}
       </p>
 
-      <p>Current time: {new Date(now).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</p>
+      <p>
+        Current time:{" "}
+        {new Date(now).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+      </p>
 
-      <button type="button" onClick={postpone} disabled={postponing}>
-        Postpone {POSTPONE_DELAY_MS / 1000}s
-      </button>
+      {/* a postponed break can't be snoozed again, the backend rejects it too */}
+      {!info.postponed && (
+        <button type="button" onClick={postpone} disabled={postponing}>
+          Postpone {POSTPONE_DELAY_MS / 1000}s
+        </button>
+      )}
     </main>
   );
 }

@@ -22,10 +22,13 @@ import { DurationUnit, type IBreakpoint } from "../ports/breakpoint.ts";
 const point: IBreakpoint = {
   id: "7",
   name: "Break",
+  message: "Look out the window",
   interval: 20,
   intervalUnit: DurationUnit.MINUTE,
   duration: 20,
   durationUnit: DurationUnit.SECOND,
+  audio: "solemn",
+  layout: "default",
   enabled: true,
 };
 

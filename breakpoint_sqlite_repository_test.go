@@ -38,6 +38,9 @@ func TestBreakpointSqliteRepositoryCRUD(t *testing.T) {
 
 	created := DefaultBreakpoint()
 	created.Name = "Twenty twenty"
+	created.Message = "Look out the window"
+	created.Audio = "solemn"
+	created.Layout = "default"
 
 	id, err := repo.Create(ctx, created)
 
@@ -69,10 +72,13 @@ func TestBreakpointSqliteRepositoryCRUD(t *testing.T) {
 
 	updated := created
 	updated.Name = "Renamed"
+	updated.Message = "Stretch"
 	updated.Interval = 45
 	updated.IntervalUnit = DurationUnitSecond
 	updated.Duration = 5
 	updated.DurationUnit = DurationUnitMinute
+	updated.Audio = ""
+	updated.Layout = "focus"
 	updated.Enabled = false
 
 	returned, err := repo.Update(ctx, updated)
@@ -129,6 +135,59 @@ func TestBreakpointSqliteRepositoryCRUD(t *testing.T) {
 
 	if len(list) != 0 {
 		t.Fatalf("expected an empty list, got %+v", list)
+	}
+}
+
+func TestBreakpointSqliteRepositoryMigratesOldTable(t *testing.T) {
+	ctx := context.Background()
+	db, err := NewSqliteDB(":memory:")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { db.Close() })
+
+	// the table an older app version shipped, without message/audio/layout
+	if _, err := db.ExecContext(ctx, `CREATE TABLE breakpoints (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT,
+		interval INTEGER,
+		interval_unit TEXT,
+		duration INTEGER,
+		duration_unit TEXT,
+		enabled BOOLEAN
+	)`); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := db.ExecContext(ctx, `INSERT INTO breakpoints (name, interval, interval_unit, duration, duration_unit, enabled)
+		VALUES ('Old', 20, 'minute', 20, 'second', 1)`); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := NewBreakpointSqliteRepository("breakpoints", db)
+
+	// migration must be safe to run on every start
+	for range 2 {
+		if err := repo.Migrate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	list, err := repo.List(ctx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(list) != 1 || list[0].Name != "Old" {
+		t.Fatalf("expected the old row to survive, got %+v", list)
+	}
+
+	// an old breakpoint picks neither an asset nor a message
+	if list[0].Message != "" || list[0].Audio != "" || list[0].Layout != "" {
+		t.Fatalf("expected empty new fields, got %+v", list[0])
 	}
 }
 

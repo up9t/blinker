@@ -45,6 +45,11 @@ export interface BlinkSettings {
 export interface BreakInfo {
     "name": string;
     "remainingMs": number;
+
+    /**
+     * a break that came back from a snooze can't be snoozed again
+     */
+    "postponed": boolean;
 }
 
 /**
@@ -53,10 +58,17 @@ export interface BreakInfo {
 export interface Breakpoint {
     "id": string;
     "name": string;
+    "message": string;
     "interval": number;
     "intervalUnit": DurationUnitType;
     "duration": number;
     "durationUnit": DurationUnitType;
+
+    /**
+     * asset names from the assets manager, empty means the user picked none
+     */
+    "audio": string;
+    "layout": string;
     "enabled": boolean;
 }
 

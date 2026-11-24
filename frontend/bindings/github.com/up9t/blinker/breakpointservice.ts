@@ -48,6 +48,8 @@ export function List(): $CancellablePromise<$models.Breakpoint[] | null> {
  * Postpone snoozes the running break: it ends now and that breakpoint reminds again after
  * delayMs. The frontend owns the delay, so tuning the snooze is a frontend constant.
  * A break that was queued while this one was up starts right away.
+ * The break that comes back from a snooze can't be snoozed again, so a user can't push a
+ * break away forever: errBreakpointPostponed is the backend's answer to that.
  */
 export function Postpone(delayMs: number): $CancellablePromise<void> {
     return $Call.ByID(2647927284, delayMs);

@@ -1,5 +1,7 @@
 import { useEffect, useId, useState, type ChangeEvent, type SubmitEvent } from "react";
+import { WailsAssetsService } from "../lib/adapters/wails_assets.ts";
 import { WailsBreakpointService } from "../lib/adapters/wails_breakpoint.ts";
+import { AssetType, type IAsset } from "../lib/ports/assets.ts";
 import {
   DEFAULT_BREAKPOINT,
   DurationUnit,
@@ -9,25 +11,38 @@ import {
 } from "../lib/ports/breakpoint.ts";
 
 const breakpointService = new WailsBreakpointService();
+const assetsService = new WailsAssetsService();
 
 const EMPTY_DRAFT: IBreakpoint = { ...DEFAULT_BREAKPOINT, id: "" };
 
 export function BreakpointPanel() {
   const [breakpoints, setBreakpoints] = useState<IBreakpoint[]>([]);
+  const [assets, setAssets] = useState<IAsset[]>([]);
   const [draft, setDraft] = useState<IBreakpoint>(EMPTY_DRAFT);
   const [error, setError] = useState("");
   const nameId = useId();
+  const messageId = useId();
   const intervalId = useId();
   const durationId = useId();
+  const audioId = useId();
+  const layoutId = useId();
   const editing = draft.id !== "";
 
   useEffect(() => {
     refresh().catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    loadAssets().catch((err) => setError(err instanceof Error ? err.message : String(err)));
   }, []);
 
   async function refresh() {
     setBreakpoints(await breakpointService.list());
   }
+
+  async function loadAssets() {
+    setAssets([...(await assetsService.listAudio()), ...(await assetsService.listLayouts())]);
+  }
+
+  const assetNames = (type: IAsset["type"]) =>
+    assets.filter((asset) => asset.type === type).map((asset) => asset.name);
 
   async function run(action: () => Promise<unknown>) {
     setError("");
@@ -46,6 +61,10 @@ export function BreakpointPanel() {
     (key: "intervalUnit" | "durationUnit") => (e: ChangeEvent<HTMLSelectElement>) => {
       change({ [key]: e.target.value as DurationUnitType });
     };
+
+  const onAssetChange = (key: "audio" | "layout") => (e: ChangeEvent<HTMLSelectElement>) => {
+    change({ [key]: e.target.value });
+  };
 
   const onSubmit = (e: SubmitEvent) => {
     e.preventDefault();
@@ -105,6 +124,14 @@ export function BreakpointPanel() {
           />
         </p>
         <p>
+          <label htmlFor={messageId}>Message </label>
+          <input
+            id={messageId}
+            value={draft.message}
+            onChange={(e) => change({ message: e.target.value })}
+          />
+        </p>
+        <p>
           <label htmlFor={intervalId}>Break every </label>
           <input
             id={intervalId}
@@ -132,6 +159,28 @@ export function BreakpointPanel() {
           <select value={draft.durationUnit} onChange={onUnitChange("durationUnit")}>
             <option value={DurationUnit.SECOND}>seconds</option>
             <option value={DurationUnit.MINUTE}>minutes</option>
+          </select>
+        </p>
+        <p>
+          <label htmlFor={audioId}>Finish Sound </label>
+          <select id={audioId} value={draft.audio} onChange={onAssetChange("audio")}>
+            <option value="">None</option>
+            {assetNames(AssetType.AUDIO).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </p>
+        <p>
+          <label htmlFor={layoutId}>Layout </label>
+          <select id={layoutId} value={draft.layout} onChange={onAssetChange("layout")}>
+            <option value="">None</option>
+            {assetNames(AssetType.LAYOUT).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
           </select>
         </p>
         <p>

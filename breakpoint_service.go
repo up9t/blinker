@@ -12,6 +12,15 @@ import (
 
 const breakpointEventBufferSize = 16
 
+// a break that came back from a snooze can't be snoozed a second time
+var errBreakpointPostponed = errors.New("a postponed break can't be postponed again")
+
+// a break waiting for the running break to finish, and whether it came back from a snooze
+type queuedBreak struct {
+	breakpoint Breakpoint
+	postponed  bool
+}
+
 // BreakpointService owns the break schedule so the overlay window only reacts to events:
 // one interval timer per enabled breakpoint, one duration timer for the running break and
 // a queue for the breaks that came due while another break was on screen.
@@ -24,6 +33,8 @@ type BreakpointService struct {
 	breakpoints map[string]Breakpoint
 	// id -> unexpired interval timer
 	intervalTimers map[string]*time.Timer
+	// id -> whether the timer is a snooze, so the break it starts can't be snoozed again
+	postponedIntervals map[string]bool
 	// id -> timer that notifies shortly before that interval timer fires
 	notifyTimers map[string]*time.Timer
 	// id -> when that timer fires, so "reset next break" finds the soonest one
@@ -31,10 +42,12 @@ type BreakpointService struct {
 	// bumped on every reschedule, so a timer that already fired can't act twice
 	generations map[string]int
 	// breaks waiting for the running break to finish
-	queue      []Breakpoint
+	queue      []queuedBreak
 	active     *Breakpoint
 	breakTimer *time.Timer
 	breakEnd   time.Time
+	// the running break came back from a snooze
+	activePostponed bool
 
 	// test seam: divides every duration, 1 in production
 	speedup time.Duration
@@ -46,15 +59,16 @@ type BreakpointService struct {
 
 func NewBreakpointService(repo BreakpointRepository) *BreakpointService {
 	return &BreakpointService{
-		repo:              repo,
-		eventCh:           make(chan BreakpointEvent, breakpointEventBufferSize),
-		breakpoints:       make(map[string]Breakpoint),
-		intervalTimers:    make(map[string]*time.Timer),
-		notifyTimers:      make(map[string]*time.Timer),
-		intervalDeadlines: make(map[string]time.Time),
-		generations:       make(map[string]int),
-		speedup:           1,
-		done:              make(chan struct{}),
+		repo:               repo,
+		eventCh:            make(chan BreakpointEvent, breakpointEventBufferSize),
+		breakpoints:        make(map[string]Breakpoint),
+		intervalTimers:     make(map[string]*time.Timer),
+		postponedIntervals: make(map[string]bool),
+		notifyTimers:       make(map[string]*time.Timer),
+		intervalDeadlines:  make(map[string]time.Time),
+		generations:        make(map[string]int),
+		speedup:            1,
+		done:               make(chan struct{}),
 	}
 }
 
@@ -77,7 +91,7 @@ func (svc *BreakpointService) Start(ctx context.Context) (<-chan BreakpointEvent
 			continue
 		}
 
-		svc.scheduleIntervalLocked(bp, bp.getInterval())
+		svc.scheduleIntervalLocked(bp, bp.getInterval(), false)
 	}
 
 	return svc.eventCh, nil
@@ -120,11 +134,13 @@ func (svc *BreakpointService) stopIntervalLocked(id string) {
 	}
 
 	delete(svc.intervalDeadlines, id)
+	delete(svc.postponedIntervals, id)
 	svc.generations[id]++
 }
 
 // caller must hold svc.mu
-func (svc *BreakpointService) scheduleIntervalLocked(bp Breakpoint, delay time.Duration) {
+// postponed marks a snooze, so the break it starts can't be snoozed again
+func (svc *BreakpointService) scheduleIntervalLocked(bp Breakpoint, delay time.Duration, postponed bool) {
 	if svc.stopped {
 		return
 	}
@@ -133,6 +149,7 @@ func (svc *BreakpointService) scheduleIntervalLocked(bp Breakpoint, delay time.D
 	generation := svc.generations[bp.ID]
 	scaled := svc.scale(delay)
 
+	svc.postponedIntervals[bp.ID] = postponed
 	svc.intervalTimers[bp.ID] = time.AfterFunc(scaled, func() {
 		svc.intervalElapsed(bp.ID, generation)
 	})
@@ -175,8 +192,9 @@ func (svc *BreakpointService) intervalReminder(id string, generation int) {
 }
 
 // caller must hold svc.mu
-func (svc *BreakpointService) startBreakLocked(bp Breakpoint) {
+func (svc *BreakpointService) startBreakLocked(bp Breakpoint, postponed bool) {
 	svc.active = &bp
+	svc.activePostponed = postponed
 	duration := svc.scale(bp.getDuration())
 	svc.breakEnd = time.Now().Add(duration)
 	svc.breakTimer = time.AfterFunc(duration, svc.finishBreak)
@@ -186,6 +204,7 @@ func (svc *BreakpointService) startBreakLocked(bp Breakpoint) {
 		data: BreakInfo{
 			Name:        bp.Name,
 			RemainingMs: int(duration / time.Millisecond),
+			Postponed:   postponed,
 		},
 	})
 }
@@ -209,6 +228,8 @@ func (svc *BreakpointService) intervalElapsed(id string, generation int) {
 	// the timer just fired, it isn't reusable
 	delete(svc.intervalTimers, id)
 	delete(svc.intervalDeadlines, id)
+	postponed := svc.postponedIntervals[id]
+	delete(svc.postponedIntervals, id)
 
 	bp, ok := svc.breakpoints[id]
 
@@ -217,11 +238,11 @@ func (svc *BreakpointService) intervalElapsed(id string, generation int) {
 	}
 
 	if svc.active != nil {
-		svc.queue = append(svc.queue, bp)
+		svc.queue = append(svc.queue, queuedBreak{breakpoint: bp, postponed: postponed})
 		return
 	}
 
-	svc.startBreakLocked(bp)
+	svc.startBreakLocked(bp, postponed)
 }
 
 // caller must hold svc.mu
@@ -240,7 +261,7 @@ func (svc *BreakpointService) finishBreak() {
 	}
 
 	// the finished breakpoint waits a full interval before its next break
-	svc.armNextIntervalLocked(finished, finished.getInterval())
+	svc.armNextIntervalLocked(finished, finished.getInterval(), false)
 	svc.startQueuedBreakLocked()
 }
 
@@ -257,6 +278,7 @@ func (svc *BreakpointService) endActiveBreakLocked() (Breakpoint, bool) {
 
 	finished := *svc.active
 	svc.active = nil
+	svc.activePostponed = false
 
 	svc.emitLocked(BreakpointEvent{
 		typ:  BreakpointEventFinishBreak,
@@ -267,14 +289,14 @@ func (svc *BreakpointService) endActiveBreakLocked() (Breakpoint, bool) {
 }
 
 // caller must hold svc.mu
-func (svc *BreakpointService) armNextIntervalLocked(finished Breakpoint, delay time.Duration) {
+func (svc *BreakpointService) armNextIntervalLocked(finished Breakpoint, delay time.Duration, postponed bool) {
 	bp, ok := svc.breakpoints[finished.ID]
 
 	if !ok || !bp.Enabled {
 		return
 	}
 
-	svc.scheduleIntervalLocked(bp, delay)
+	svc.scheduleIntervalLocked(bp, delay, postponed)
 }
 
 // caller must hold svc.mu
@@ -284,13 +306,13 @@ func (svc *BreakpointService) startQueuedBreakLocked() {
 		svc.queue = svc.queue[1:]
 
 		// it may have been disabled or removed while waiting
-		bp, ok := svc.breakpoints[next.ID]
+		bp, ok := svc.breakpoints[next.breakpoint.ID]
 
 		if !ok || !bp.Enabled {
 			continue
 		}
 
-		svc.startBreakLocked(bp)
+		svc.startBreakLocked(bp, next.postponed)
 
 		return
 	}
@@ -300,9 +322,9 @@ func (svc *BreakpointService) startQueuedBreakLocked() {
 func (svc *BreakpointService) removeFromQueueLocked(id string) {
 	kept := svc.queue[:0]
 
-	for _, bp := range svc.queue {
-		if bp.ID != id {
-			kept = append(kept, bp)
+	for _, queued := range svc.queue {
+		if queued.breakpoint.ID != id {
+			kept = append(kept, queued)
 		}
 	}
 
@@ -337,12 +359,15 @@ func (svc *BreakpointService) ActiveBreak() *BreakInfo {
 	return &BreakInfo{
 		Name:        svc.active.Name,
 		RemainingMs: int(remaining / time.Millisecond),
+		Postponed:   svc.activePostponed,
 	}
 }
 
 // Postpone snoozes the running break: it ends now and that breakpoint reminds again after
 // delayMs. The frontend owns the delay, so tuning the snooze is a frontend constant.
 // A break that was queued while this one was up starts right away.
+// The break that comes back from a snooze can't be snoozed again, so a user can't push a
+// break away forever: errBreakpointPostponed is the backend's answer to that.
 func (svc *BreakpointService) Postpone(delayMs int) error {
 	delay := time.Duration(delayMs) * time.Millisecond
 
@@ -354,13 +379,17 @@ func (svc *BreakpointService) Postpone(delayMs int) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
+	if svc.activePostponed {
+		return errBreakpointPostponed
+	}
+
 	finished, ok := svc.endActiveBreakLocked()
 
 	if !ok {
 		return nil
 	}
 
-	svc.armNextIntervalLocked(finished, delay)
+	svc.armNextIntervalLocked(finished, delay, true)
 	svc.startQueuedBreakLocked()
 
 	return nil
@@ -381,7 +410,7 @@ func (svc *BreakpointService) ResetNextBreak() {
 	var nextID string
 
 	if svc.active != nil && len(svc.queue) > 0 {
-		nextID = svc.queue[0].ID
+		nextID = svc.queue[0].breakpoint.ID
 		svc.queue = svc.queue[1:]
 	} else {
 		var nextDeadline time.Time
@@ -400,7 +429,7 @@ func (svc *BreakpointService) ResetNextBreak() {
 		return
 	}
 
-	svc.scheduleIntervalLocked(bp, bp.getInterval())
+	svc.scheduleIntervalLocked(bp, bp.getInterval(), false)
 }
 
 func (svc *BreakpointService) Add(ctx context.Context, bp Breakpoint) (Breakpoint, error) {
@@ -425,7 +454,7 @@ func (svc *BreakpointService) Add(ctx context.Context, bp Breakpoint) (Breakpoin
 	svc.breakpoints[bp.ID] = bp
 
 	if bp.Enabled {
-		svc.scheduleIntervalLocked(bp, bp.getInterval())
+		svc.scheduleIntervalLocked(bp, bp.getInterval(), false)
 	}
 
 	return bp, nil
@@ -477,7 +506,7 @@ func (svc *BreakpointService) Enable(ctx context.Context, id string) error {
 	defer svc.mu.Unlock()
 
 	svc.breakpoints[bp.ID] = bp
-	svc.scheduleIntervalLocked(bp, bp.getInterval())
+	svc.scheduleIntervalLocked(bp, bp.getInterval(), false)
 
 	return nil
 }
@@ -520,7 +549,7 @@ func (svc *BreakpointService) Update(ctx context.Context, bp Breakpoint) (Breakp
 	svc.breakpoints[updated.ID] = updated
 
 	if updated.Enabled {
-		svc.scheduleIntervalLocked(updated, updated.getInterval())
+		svc.scheduleIntervalLocked(updated, updated.getInterval(), false)
 	} else {
 		svc.stopIntervalLocked(updated.ID)
 		svc.removeFromQueueLocked(updated.ID)

@@ -49,17 +49,23 @@ const (
 type Breakpoint struct {
 	ID           string           `json:"id"`
 	Name         string           `json:"name"`
+	Message      string           `json:"message"`
 	Interval     int              `json:"interval"`
 	IntervalUnit DurationUnitType `json:"intervalUnit"`
 	Duration     int              `json:"duration"`
 	DurationUnit DurationUnitType `json:"durationUnit"`
-	Enabled      bool             `json:"enabled"`
+	// asset names from the assets manager, empty means the user picked none
+	Audio   string `json:"audio"`
+	Layout  string `json:"layout"`
+	Enabled bool   `json:"enabled"`
 }
 
 // only what the break overlay needs, sent with the start event
 type BreakInfo struct {
 	Name        string `json:"name"`
 	RemainingMs int    `json:"remainingMs"`
+	// a break that came back from a snooze can't be snoozed again
+	Postponed bool `json:"postponed"`
 }
 
 func DefaultBreakpoint() Breakpoint {

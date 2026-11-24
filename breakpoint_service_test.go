@@ -532,6 +532,106 @@ func TestBreakpointServicePostponeSnoozes(t *testing.T) {
 	}
 }
 
+func TestBreakpointServicePostponedBreakCantBePostponedAgain(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeBreakpointRepository()
+	svc := newTestBreakpointService(repo)
+	events := startTestBreakpointService(t, svc)
+
+	// 1s interval (1ms), 60s break (60ms), 30s snooze (30ms)
+	if _, err := svc.Add(ctx, newTestBreakpoint("Break", 1, 60)); err != nil {
+		t.Fatal(err)
+	}
+
+	first := waitBreakpointEvent(t, events, BreakpointEventStartBreak)
+
+	if first.data.Postponed {
+		t.Fatal("expected a scheduled break not to be a postponed one")
+	}
+
+	if err := svc.Postpone(30_000); err != nil {
+		t.Fatal(err)
+	}
+
+	waitBreakpointEvent(t, events, BreakpointEventFinishBreak)
+	snoozed := waitBreakpointEvent(t, events, BreakpointEventStartBreak)
+
+	if !snoozed.data.Postponed {
+		t.Fatal("expected the break that came back to be marked postponed")
+	}
+
+	if info := svc.ActiveBreak(); info == nil || !info.Postponed {
+		t.Fatalf("expected the running break to be a postponed one, got %+v", info)
+	}
+
+	// the overlay hides the button, the backend is what actually enforces the rule
+	if err := svc.Postpone(30_000); !errors.Is(err, errBreakpointPostponed) {
+		t.Fatalf("expected the second postpone to be rejected, got %v", err)
+	}
+
+	if svc.ActiveBreak() == nil {
+		t.Fatal("the rejected postpone ended the break")
+	}
+
+	waitBreakpointEvent(t, events, BreakpointEventFinishBreak)
+
+	// once the postponed break is over, the cycle is normal again
+	next := waitBreakpointEvent(t, events, BreakpointEventStartBreak)
+
+	if next.data.Postponed {
+		t.Fatal("expected a normal break after the postponed one finished")
+	}
+
+	if err := svc.Postpone(30_000); err != nil {
+		t.Fatalf("expected postpone to be available again, got %v", err)
+	}
+}
+
+func TestBreakpointServiceQueuedPostponedBreakKeepsTheFlag(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeBreakpointRepository()
+	svc := newTestBreakpointService(repo)
+	events := startTestBreakpointService(t, svc)
+
+	// Long starts right away, Short starts 100ms later and runs 500ms, so the 300ms snooze
+	// comes due while Short is on screen and has to wait in the queue
+	if _, err := svc.Add(ctx, newTestBreakpoint("Long", 1, 300)); err != nil {
+		t.Fatal(err)
+	}
+
+	short := newTestBreakpoint("Short", 100, 500)
+	short.IntervalUnit = DurationUnitSecond
+
+	if _, err := svc.Add(ctx, short); err != nil {
+		t.Fatal(err)
+	}
+
+	if first := waitBreakpointEvent(t, events, BreakpointEventStartBreak); first.data.Name != "Long" {
+		t.Fatalf("expected Long to start first, got %q", first.data.Name)
+	}
+
+	if err := svc.Postpone(300_000); err != nil {
+		t.Fatal(err)
+	}
+
+	waitBreakpointEvent(t, events, BreakpointEventFinishBreak)
+
+	if second := waitBreakpointEvent(t, events, BreakpointEventStartBreak); second.data.Name != "Short" {
+		t.Fatalf("expected the queued Short break, got %q", second.data.Name)
+	}
+
+	waitBreakpointEvent(t, events, BreakpointEventFinishBreak)
+	third := waitBreakpointEvent(t, events, BreakpointEventStartBreak)
+
+	if third.data.Name != "Long" || !third.data.Postponed {
+		t.Fatalf("expected the postponed break to keep its flag through the queue, got %+v", third.data)
+	}
+
+	if err := svc.Postpone(30_000); !errors.Is(err, errBreakpointPostponed) {
+		t.Fatalf("expected the second postpone to be rejected, got %v", err)
+	}
+}
+
 func TestBreakpointServicePostponeStartsQueuedBreakRightAway(t *testing.T) {
 	repo := newFakeBreakpointRepository()
 	repo.seed(t, newTestBreakpoint("Long", 1, 50))
