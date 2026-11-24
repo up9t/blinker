@@ -23,8 +23,8 @@
   - [x] Save settings data to the backend and automatically hydrate/sync on launch/relaunch/mount/reload the app. This settings is in its own boundary/domain, don't mess with other settings like blink_settings or general/global settings.
   - [x] Add test to the frontend.
   - [x] Send Notification 40 seconds before break, if the break interval is >= 40 seconds. Store the number as a constant variable for now. With data of title=appname,body="Break is coming! 40s (name-of-the-break-here)"
-  - [ ] Add "message" field in the breakpoint struct. 
-  - [ ] Add/include builtin assets (audio/layout) from `assets/` directory embedded in the Go binary.
+  - [ ] Postponed break can't be postponed twice, if the postponed break duration is finished, postpone feature back to be available, enforce the rule on the backend and hide the postpone button on the frontend if it's a postponed break.
+  - [ ] Add "message" field in the breakpoint struct, add input field on the frontend.
   - [ ] Play a sound on finish break (backend).
   - [ ] (later needs assets manager) Add 2 selection dropdowns to choose what audio/sound and layout to use based on what available in the assets manager.
   - [ ] (later needs assets manager) Play a sound when break ends, based on the selected audio
@@ -51,18 +51,18 @@
   - [x] Reset next break
 
 - [ ] Assets Manager
+  - [ ] Add/include builtin assets (audio/layout) from `assets/` directory embedded in the Go binary using go:embed.
+  - [ ] AssetsService on the backend, and Frontend can retrieve data from the backend, method such as list audio, list layout, etc from the go:embed variable, with data includes asset name, asset type (audio/layout).
   - [ ] Allow user upload/import custom assets such as audio for custom notif sound, html layout for breakpoints ui. 
   - [ ] Assets Type: Audio/Overlay.
   - [ ] Import by Drag & drop.
-  - [ ] If user drop audio files only, automatically create a new assets (a directory with a package.json, maybe need to create template/package.json file first) with type audio. If they drop audio files with html files, make it assets type overlay.
+  - [ ] If the user drop audio files only (mp3, ogg, flac, opus), automatically create a new assets (a directory with a package.json, maybe need to create template/package.json file first) with type audio. If they drop audio files with html files, make it assets type overlay.
   - [ ] (Later) Import by Install asset through a registry.
-  - [ ] Frontend can retrieve info from the backend such as asset name, asset type (audio/layout), list audio, list layout, etc. To be used in the "breakpoints" page, and "overlay" editor. 
   - [ ] Uploaded content should be copied somewhere in a directory such as appdir/assets/.
   - [ ] Button to open assets dir in file manager. Frontend -> Backend. Does wails have this capability? I need to know it first.
   - [ ] Asset manifest defined in package.json. And "displayName" would be the data user see in the dropdown option in the breakpoints page.
   - [ ] Scan assets only 1-level directly inside the asset directory.
   - [ ] Enable/Disable assets. Disabled asset won't be shown in the dropdown selection.
-  - [ ] AssetsManager/AssetsService on the backend.
   - [ ] Create Test AssetsManager/Service.
 
 - [ ] Testing
