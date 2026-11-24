@@ -150,6 +150,7 @@ func main() {
 			application.NewService(breakpointService),
 			application.NewService(cameraService),
 			application.NewService(blinkSettingsService),
+			application.NewService(NewAssetsService(builtinAssets)),
 			application.NewService(notifier),
 		},
 		Assets: application.AssetOptions{

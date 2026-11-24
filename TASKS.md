@@ -25,9 +25,8 @@
   - [x] Send Notification 40 seconds before break, if the break interval is >= 40 seconds. Store the number as a constant variable for now. With data of title=appname,body="Break is coming! 40s (name-of-the-break-here)"
   - [ ] Postponed break can't be postponed twice, if the postponed break duration is finished, postpone feature back to be available, enforce the rule on the backend and hide the postpone button on the frontend if it's a postponed break.
   - [ ] Add "message" field in the breakpoint struct, add input field on the frontend.
-  - [ ] Play a sound on finish break (backend).
-  - [ ] (later needs assets manager) Add 2 selection dropdowns to choose what audio/sound and layout to use based on what available in the assets manager.
-  - [ ] (later needs assets manager) Play a sound when break ends, based on the selected audio
+  - [ ] Add 2 selection dropdowns to choose what audio/sound and layout to use based on what available in the assets manager.
+  - [ ] (Need library) Play a sound when break ends, based on the selected audio (backend).
   - [ ] (later needs assets manager) Load the selectect ui layout when the break start.
   - [ ] (later needs overlay editor) Customize break UI, through Overlay Editor (see below)
 
@@ -51,8 +50,8 @@
   - [x] Reset next break
 
 - [ ] Assets Manager
-  - [ ] Add/include builtin assets (audio/layout) from `assets/` directory embedded in the Go binary using go:embed.
-  - [ ] AssetsService on the backend, and Frontend can retrieve data from the backend, method such as list audio, list layout, etc from the go:embed variable, with data includes asset name, asset type (audio/layout).
+  - [x] Add/include builtin assets (audio/layout) from `assets/` directory embedded in the Go binary using go:embed.
+  - [x] AssetsService on the backend, and Frontend can retrieve data from the backend, method such as list audio, list layout, etc from the go:embed variable, with data includes asset name, asset type (audio/layout).
   - [ ] Allow user upload/import custom assets such as audio for custom notif sound, html layout for breakpoints ui. 
   - [ ] Assets Type: Audio/Overlay.
   - [ ] Import by Drag & drop.

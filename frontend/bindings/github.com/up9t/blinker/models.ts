@@ -4,6 +4,35 @@
 /**
  * json tags are what the binding generator uses for the frontend field names
  */
+export interface Asset {
+    /**
+     * the file name without its extension, unique inside its type
+     */
+    "name": string;
+    "type": AssetType;
+}
+
+export type AssetType = string;
+
+/**
+ * Predefined constants for type AssetType.
+ * @namespace
+ */
+export const AssetType = {
+    /**
+     * a sound played when a break ends
+     */
+    AssetTypeAudio: "audio",
+
+    /**
+     * the html shown by the break overlay
+     */
+    AssetTypeLayout: "layout",
+};
+
+/**
+ * json tags are what the binding generator uses for the frontend field names
+ */
 export interface BlinkSettings {
     "eyeCloseThreshold": number;
     "eyeOpenThreshold": number;

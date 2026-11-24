@@ -1,7 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { AssetsPanel } from "@/components/AssetsPanel.tsx";
 ---
 
 <Layout>
   <h1>Asset</h1>
+  <AssetsPanel client:only />
 </Layout>
